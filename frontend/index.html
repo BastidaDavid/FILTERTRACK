@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard – Sistema de Filtros</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="layout">
+    <div class="col-filtros">
+      <h1>Dashboard – Sistema de Filtros</h1>
+
+      <h2>Agregar nuevo filtro</h2>
+
+      <form id="form-filtro">
+        <input type="text" id="nombre" placeholder="Nombre del filtro" required />
+        <input type="text" id="codigo" placeholder="Código de barra" required />
+        <input type="date" id="fecha" required />
+        <input type="number" id="vida" placeholder="Vida útil (días)" required />
+        <button type="submit">Guardar filtro</button>
+        <button type="button" id="btn-limpiar">Limpiar campos</button>
+      </form>
+
+      <div class="estado-bar">
+        <button class="estado-btn activo" data-estado="all">
+          Todos (<span id="count-all">0</span>)
+        </button>
+
+        <button class="estado-btn" data-estado="proximo">
+          Próximos (<span id="count-proximo">0</span>)
+        </button>
+
+        <button class="estado-btn" data-estado="vencido">
+          Vencidos (<span id="count-vencido">0</span>)
+        </button>
+      </div>
+
+      <table id="tabla-filtros">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th>Fecha instalación</th>
+            <th>Vida útil (días)</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- JS inserta filas aquí -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-mantenimientos">
+      <button id="btn-cerrar-panel" style="float:right;">✕</button>
+      <h2>Mantenimientos del filtro</h2>
+
+      <div id="seccion-mantenimientos" style="display:none;">
+        <h3 id="titulo-mantenimientos"></h3>
+
+        <form id="form-mantenimiento">
+          <input type="date" id="mant-fecha" required />
+          <input type="text" id="mant-observaciones" placeholder="Observaciones" />
+          <button type="submit">Guardar mantenimiento</button>
+        </form>
+
+        <table id="tabla-mantenimientos">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Observaciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- JS inserta mantenimientos aquí -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <div id="overlay" class="overlay"></div>
+</body>
+</html>
