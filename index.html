@@ -2,21 +2,22 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <base href="./">
   <title>Dashboard – Sistema de Filtros</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="layout">
     <div class="col-filtros">
-      <h1>Dashboard – Sistema de Filtros</h1>
-
-      <h2>Agregar nuevo filtro</h2>
+      <h1 class="app-title">FILTERTRACK</h1>
 
       <form id="form-filtro">
-        <input type="text" id="nombre" placeholder="Nombre del filtro" required />
-        <input type="text" id="codigo" placeholder="Código de barra" required />
-        <input type="date" id="fecha" required />
-        <input type="number" id="vida" placeholder="Vida útil (días)" required />
+         <h2>Agregar filtro</h2>
+        <input type="text" id="nombre" name="nombre" placeholder="Nombre del filtro" required />
+        <input type="text" id="codigo" name="codigo_barra" placeholder="Código de barra" required />
+        <input type="date" id="fecha" name="fecha_instalacion" required />
+        <input type="number" id="vida" name="vida_util_dias" placeholder="Vida útil (días)" required />
+        <input type="number" id="pressure-initial" name="pressure_initial" placeholder="Presión inicial (PSI)" required />
         <button type="submit">Guardar filtro</button>
         <button type="button" id="btn-limpiar">Limpiar campos</button>
       </form>
@@ -35,6 +36,10 @@
         </button>
       </div>
 
+      <button id="btn-reporte-filtros" class="btn-reporte">
+        🖨️ Generar reporte de filtros
+      </button>
+
       <table id="tabla-filtros">
         <thead>
           <tr>
@@ -42,7 +47,7 @@
             <th>Nombre</th>
             <th>Código</th>
             <th>Fecha instalación</th>
-            <th>Vida útil (días)</th>
+            <th>Presión (PSI)</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -56,6 +61,9 @@
     <div class="col-mantenimientos">
       <button id="btn-cerrar-panel" style="float:right;">✕</button>
       <h2>Mantenimientos del filtro</h2>
+      <button id="btn-reporte-mantenimientos" class="btn-reporte">
+        🖨️ Generar reporte de mantenimientos
+      </button>
 
       <div id="seccion-mantenimientos" style="display:none;">
         <h3 id="titulo-mantenimientos"></h3>
@@ -63,6 +71,7 @@
         <form id="form-mantenimiento">
           <input type="date" id="mant-fecha" required />
           <input type="text" id="mant-observaciones" placeholder="Observaciones" />
+          <input type="number" id="mant-pressure-current" placeholder="Presión actual (PSI)" />
           <button type="submit">Guardar mantenimiento</button>
         </form>
 
@@ -82,6 +91,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
   <div id="overlay" class="overlay"></div>
 </body>

@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const db = require('./database')
+const { appendFiltroRow, appendMantenimientoRow } = require('./googleSheets')
 
 const app = express()
 app.use(cors())
@@ -12,6 +14,7 @@ db.run(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filtro_id INTEGER,
     fecha TEXT,
+    presion_actual REAL,
     observaciones TEXT
   )
 `, (err) => {
@@ -29,7 +32,9 @@ db.run(`
     nombre TEXT,
     codigo_barra TEXT,
     fecha_instalacion TEXT,
-    vida_util_dias INTEGER
+    vida_util_dias INTEGER,
+    pressure_initial REAL,
+    presion_actual REAL
   )
 `, (err) => {
   if (err) {
@@ -45,22 +50,40 @@ app.get('/', (req, res) => {
 
 // Crear filtro
 app.post('/filtros', (req, res) => {
-  const { nombre, codigo_barra, fecha_instalacion, vida_util_dias } = req.body
+  const { nombre, codigo_barra, fecha_instalacion, vida_util_dias, pressure_initial } = req.body
 
   if (!nombre || !codigo_barra) {
     return res.status(400).json({ error: 'nombre y codigo_barra son obligatorios' })
   }
 
   const sql = `
-    INSERT INTO filtros (nombre, codigo_barra, fecha_instalacion, vida_util_dias)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO filtros (nombre, codigo_barra, fecha_instalacion, vida_util_dias, pressure_initial, presion_actual)
+    VALUES (?, ?, ?, ?, ?, ?)
   `
 
-  db.run(sql, [nombre, codigo_barra, fecha_instalacion, vida_util_dias], function (err) {
+  db.run(sql, [nombre, codigo_barra, fecha_instalacion, vida_util_dias, pressure_initial || null, null], function (err) {
     if (err) {
       return res.status(500).json({ error: err.message })
     }
-    res.json({ message: 'Filtro agregado', id: this.lastID })
+    const nuevoFiltro = {
+      id: this.lastID,
+      nombre,
+      codigo_barra,
+      fecha_instalacion,
+      vida_util_dias,
+      pressure_initial,
+      presion_actual: null,
+      estado: 'Activo'
+    }
+
+    appendFiltroRow(nuevoFiltro)
+      .then(() => {
+        res.json({ message: 'Filtro agregado y sincronizado', id: this.lastID })
+      })
+      .catch(err => {
+        console.error('Error sincronizando con Google Sheets:', err.message)
+        res.json({ message: 'Filtro agregado (sin sync Sheets)', id: this.lastID })
+      })
   })
 })
 
@@ -121,33 +144,72 @@ app.put('/filtros/:id', (req, res) => {
   )
 })
 
+app.patch('/filtros/:id', (req, res) => {
+  const { id } = req.params
+  const { presion_actual } = req.body
+
+  db.run(
+    'UPDATE filtros SET presion_actual = ? WHERE id = ?',
+    [presion_actual, id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message })
+      }
+      res.json({ message: 'Presión actualizada correctamente' })
+    }
+  )
+})
+
 // ===============================
 // MANTENIMIENTOS
 // ===============================
 
 // Registrar mantenimiento
 app.post('/mantenimientos', (req, res) => {
-  const { filtro_id, fecha, observaciones } = req.body
+  const { filtro_id, fecha, presion_actual, observaciones } = req.body
 
   if (!filtro_id || !fecha) {
     return res.status(400).json({ error: 'filtro_id y fecha son obligatorios' })
   }
 
   const sql = `
-    INSERT INTO mantenimientos (filtro_id, fecha, observaciones)
-    VALUES (?, ?, ?)
+    INSERT INTO mantenimientos (filtro_id, fecha, presion_actual, observaciones)
+    VALUES (?, ?, ?, ?)
   `
 
-  db.run(sql, [filtro_id, fecha, observaciones], function (err) {
+  db.run(sql, [filtro_id, fecha, presion_actual || null, observaciones], function (err) {
     if (err) {
       console.error('Error al registrar mantenimiento:', err.message)
       return res.status(500).json({ error: err.message })
     }
 
-    res.json({
-      message: 'Mantenimiento registrado correctamente',
-      id: this.lastID
-    })
+    db.run(
+      'UPDATE filtros SET presion_actual = ? WHERE id = ?',
+      [presion_actual || null, filtro_id]
+    )
+
+    const nuevoMantenimiento = {
+      id: this.lastID,
+      filtro_id,
+      fecha,
+      presion_actual,
+      observaciones
+    }
+
+    appendMantenimientoRow(nuevoMantenimiento)
+      .then(() => {
+        res.json({
+          message: 'Mantenimiento registrado y sincronizado',
+          id: this.lastID
+        })
+      })
+      .catch(err => {
+        console.error('Error sincronizando mantenimiento en Sheets:', err.message)
+        res.json({
+          message: 'Mantenimiento registrado (sin sync Sheets)',
+          id: this.lastID
+        })
+      })
   })
 })
 

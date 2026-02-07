@@ -1,6 +1,9 @@
+const path = require('path')
 const sqlite3 = require('sqlite3').verbose()
 
-const db = new sqlite3.Database('./filtros.db', (err) => {
+const db = new sqlite3.Database(
+  path.join(__dirname, 'filtros.db'),
+  (err) => {
   if (err) {
     console.error('Error al conectar DB:', err.message)
   } else {
@@ -14,7 +17,9 @@ db.run(`
     nombre TEXT,
     codigo_barra TEXT,
     fecha_instalacion TEXT,
-    vida_util_dias INTEGER
+    vida_util_dias INTEGER,
+    pressure_initial REAL,
+    presion_actual REAL
   )
 `)
 
@@ -23,6 +28,7 @@ db.run(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filtro_id INTEGER,
     fecha TEXT,
+    presion_actual REAL,
     observaciones TEXT
   )
 `)

@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+console.log('SCRIPT CARGADO')
+
 const API_URL = 'http://localhost:3001/filtros'
 let filtroEditandoId = null
 let filtrosCache = []
@@ -21,20 +23,59 @@ function calcularEstado(fechaInstalacion, vidaUtilDias) {
       prioridad: 0,
       dias: diasRestantes
     }
-  } else if (diasRestantes <= 30) {
+  }
+
+  if (diasRestantes <= 30) {
     return {
-      texto: 'Próximo',
-      clase: 'estado-amarillo',
+      texto: 'Cambio inmediato',
+      clase: 'estado-naranja',
       prioridad: 1,
       dias: diasRestantes
     }
-  } else {
+  }
+
+  if (diasRestantes <= 60) {
     return {
-      texto: 'OK',
-      clase: 'estado-verde',
+      texto: 'Solicitar',
+      clase: 'estado-amarillo',
       prioridad: 2,
       dias: diasRestantes
     }
+  }
+
+  return {
+    texto: 'OK',
+    clase: 'estado-verde',
+    prioridad: 3,
+    dias: diasRestantes
+  }
+}
+
+function calcularEstadoPorPresion(pressureInitial, pressureActual) {
+  if (!pressureInitial || !pressureActual) return null
+
+  const drop = pressureInitial - pressureActual
+
+  if (drop > 10) {
+    return {
+      texto: 'Crítico (Presión)',
+      clase: 'estado-rojo',
+      prioridad: 0
+    }
+  }
+
+  if (drop > 5) {
+    return {
+      texto: 'Advertencia (Presión)',
+      clase: 'estado-amarillo',
+      prioridad: 1
+    }
+  }
+
+  return {
+    texto: 'OK',
+    clase: 'estado-verde',
+    prioridad: 3
   }
 }
 
@@ -75,10 +116,19 @@ async function cargarFiltros() {
     const ok = []
 
     filtros.forEach(filtro => {
-      const estado = calcularEstado(
+      let estado = calcularEstado(
         filtro.fecha_instalacion,
         filtro.vida_util_dias
       )
+
+      const estadoPresion = calcularEstadoPorPresion(
+        filtro.pressure_initial,
+        filtro.presion_actual
+      )
+
+      if (estadoPresion && estadoPresion.prioridad < estado.prioridad) {
+        estado = { ...estado, ...estadoPresion }
+      }
 
       const tr = document.createElement('tr')
       tr.innerHTML = `
@@ -86,13 +136,19 @@ async function cargarFiltros() {
         <td>${filtro.nombre}</td>
         <td>${filtro.codigo_barra}</td>
         <td>${filtro.fecha_instalacion}</td>
-        <td>${filtro.vida_util_dias}</td>
+        <td>
+          <span class="badge-presion">
+            ${filtro.presion_actual
+              ? filtro.presion_actual + ' PSI'
+              : (filtro.pressure_initial ? filtro.pressure_initial + ' PSI' : '-')}
+          </span>
+        </td>
         <td>
           <span class="badge ${estado.clase}">
             ${estado.texto}
-            <div class="dias-restantes">
-              ${estado.dias} días
-            </div>
+            ${estado.dias !== undefined 
+              ? `<div class="dias-restantes">${estado.dias} días</div>` 
+              : ''}
           </span>
         </td>
         <td>
@@ -126,37 +182,56 @@ async function cargarFiltros() {
 }
 
 // Enviar formulario
-document.getElementById('form-filtro').addEventListener('submit', async (e) => {
-  e.preventDefault()
+const formFiltro = document.getElementById('form-filtro')
+if (formFiltro) {
+  formFiltro.addEventListener('submit', async (e) => {
+    e.preventDefault()
 
-  const data = {
-    nombre: document.getElementById('nombre').value,
-    codigo_barra: document.getElementById('codigo').value,
-    fecha_instalacion: document.getElementById('fecha').value,
-    vida_util_dias: document.getElementById('vida').value
-  }
+    const data = {
+      nombre: document.getElementById('nombre').value,
+      codigo_barra: document.getElementById('codigo').value,
+      fecha_instalacion: document.getElementById('fecha').value,
+      vida_util_dias: document.getElementById('vida').value,
+      pressure_initial: document.getElementById('pressure-initial')?.value || null
+    }
 
-  if (filtroEditandoId) {
-    await fetch(`${API_URL}/${filtroEditandoId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-    filtroEditandoId = null
-  } else {
-    await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-  }
+    if (filtroEditandoId) {
+      await fetch(`${API_URL}/${filtroEditandoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      filtroEditandoId = null
+    } else {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+    }
 
-  limpiarFormulario()
-  cargarFiltros()
-})
+    limpiarFormulario()
+    cargarFiltros()
+  })
+}
+
+const btnGuardar = document.getElementById('btn-guardar')
+if (btnGuardar) {
+  btnGuardar.addEventListener('click', (e) => {
+    e.preventDefault()
+    formFiltro?.dispatchEvent(new Event('submit', { cancelable: true }))
+  })
+}
 
 // Inicial
 cargarFiltros()
+
+  // Reporte de filtros
+  const btnReporteFiltros = document.getElementById('btn-reporte-filtros')
+  if (btnReporteFiltros) {
+    btnReporteFiltros.addEventListener('click', generarReporteFiltros)
+  }
+
 
 // Eliminar filtro
 async function eliminarFiltro(id) {
@@ -194,14 +269,19 @@ function limpiarFormulario() {
   document.getElementById('form-filtro').reset()
 }
 
-document.getElementById('btn-limpiar').addEventListener('click', () => {
-  limpiarFormulario()
-})
+const btnLimpiar = document.getElementById('btn-limpiar')
+if (btnLimpiar) {
+  btnLimpiar.addEventListener('click', () => {
+    limpiarFormulario()
+  })
+}
 
 let filtroActualId = null
+window.filtroActualId = null
 
 function verMantenimientos(filtroId) {
   filtroActualId = filtroId
+  window.filtroActualId = filtroId
 
   const panel = document.querySelector('.col-mantenimientos')
   const overlay = document.getElementById('overlay')
@@ -230,36 +310,56 @@ function verMantenimientos(filtroId) {
         tr.innerHTML = `
           <td>${m.id}</td>
           <td>${m.fecha}</td>
+          <td>${m.presion_actual ? m.presion_actual + ' PSI' : '-'}</td>
           <td>${m.observaciones || ''}</td>
         `
         tbody.appendChild(tr)
       })
     })
+  // Conectar botón de reporte de mantenimientos cuando el panel está activo
+  const btnReporteMantenimientos = document.getElementById('btn-reporte-mantenimientos')
+  if (btnReporteMantenimientos) {
+    btnReporteMantenimientos.onclick = generarReporteMantenimientos
+  }
 }
 
 // Guardar mantenimiento
-document.getElementById('form-mantenimiento').addEventListener('submit', e => {
-  e.preventDefault()
+const formMantenimiento = document.getElementById('form-mantenimiento')
+if (formMantenimiento) {
+  formMantenimiento.addEventListener('submit', e => {
+    e.preventDefault()
 
-  const fecha = document.getElementById('mant-fecha').value
-  const observaciones = document.getElementById('mant-observaciones').value
+    const fecha = document.getElementById('mant-fecha').value
+    const observaciones = document.getElementById('mant-observaciones').value
 
-  fetch('http://localhost:3001/mantenimientos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      filtro_id: filtroActualId,
-      fecha,
-      observaciones
+    fetch('http://localhost:3001/mantenimientos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filtro_id: filtroActualId,
+        fecha,
+        presion_actual: document.getElementById('mant-pressure-current')?.value || null,
+        observaciones
+      })
     })
+      .then(res => res.json())
+      .then(() => {
+        return fetch(`http://localhost:3001/filtros/${filtroActualId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            presion_actual: document.getElementById('mant-pressure-current')?.value || null
+          })
+        })
+      })
+      .then(() => {
+        document.getElementById('mant-fecha').value = ''
+        document.getElementById('mant-observaciones').value = ''
+        verMantenimientos(filtroActualId)
+        cargarFiltros()
+      })
   })
-    .then(res => res.json())
-    .then(() => {
-      document.getElementById('mant-fecha').value = ''
-      document.getElementById('mant-observaciones').value = ''
-      verMantenimientos(filtroActualId)
-    })
-})
+}
 
 const overlay = document.getElementById('overlay')
 const btnCerrar = document.getElementById('btn-cerrar-panel')
@@ -294,4 +394,117 @@ document.querySelectorAll('.estado-btn').forEach(btn => {
 window.verMantenimientos = verMantenimientos
 window.editarFiltro = editarFiltro
 window.eliminarFiltro = eliminarFiltro
+// Exponer funciones de estado para reportes PDF
+window.calcularEstado = calcularEstado
+window.calcularEstadoPorPresion = calcularEstadoPorPresion
 })
+
+async function generarReporteFiltros() {
+  const { jsPDF } = window.jspdf
+  const doc = new jsPDF('p', 'mm', 'a4')
+
+  doc.setFontSize(18)
+  doc.text('FILTERTRACK', 105, 15, { align: 'center' })
+
+  doc.setFontSize(11)
+  doc.text('Reporte de Filtros', 14, 25)
+  doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 32)
+
+  const res = await fetch('http://localhost:3001/filtros')
+  const filtros = await res.json()
+
+  let y = 42
+
+  doc.setFontSize(9)
+  doc.text('ID', 14, y)
+  doc.text('Nombre', 22, y)
+  doc.text('Código', 55, y)
+  doc.text('Instalación', 85, y)
+  doc.text('Vida (d)', 112, y)
+  doc.text('Presión', 132, y)
+  doc.text('Estado', 160, y)
+
+  y += 6
+
+  filtros.forEach(f => {
+    const estadoTiempo = calcularEstado(f.fecha_instalacion, f.vida_util_dias)
+    const estadoPresion = calcularEstadoPorPresion(f.pressure_initial, f.presion_actual)
+
+    let estadoFinal = estadoTiempo
+    if (estadoPresion && estadoPresion.prioridad < estadoTiempo.prioridad) {
+      estadoFinal = { ...estadoTiempo, ...estadoPresion }
+    }
+
+    doc.text(String(f.id), 14, y)
+    doc.text(String(f.nombre), 22, y)
+    doc.text(String(f.codigo_barra), 55, y)
+    doc.text(String(f.fecha_instalacion), 85, y)
+    doc.text(String(f.vida_util_dias), 112, y)
+
+    const presion = f.presion_actual ?? f.pressure_initial ?? '-'
+    doc.text(String(presion), 132, y)
+
+    doc.text(estadoFinal.texto, 160, y)
+
+    y += 6
+
+    if (y > 280) {
+      doc.addPage()
+      y = 20
+    }
+  })
+
+  doc.save('filtertrack_reporte_filtros.pdf')
+}
+
+async function generarReporteMantenimientos() {
+  if (!window.filtroActualId) {
+    alert('Selecciona un filtro para generar su reporte de mantenimientos')
+    return
+  }
+
+  const filtroId = window.filtroActualId
+
+  const { jsPDF } = window.jspdf
+  const doc = new jsPDF('p', 'mm', 'a4')
+
+  doc.setFontSize(18)
+  doc.text('FILTERTRACK', 105, 15, { align: 'center' })
+
+  doc.setFontSize(11)
+  doc.text('Reporte de Mantenimientos', 14, 25)
+  doc.text(`Filtro ID: ${filtroId}`, 14, 32)
+  doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 39)
+
+  const res = await fetch(`http://localhost:3001/mantenimientos/${filtroId}`)
+  const mantenimientos = await res.json()
+
+  let y = 50
+
+  doc.setFontSize(9)
+  doc.text('ID', 14, y)
+  doc.text('Fecha', 30, y)
+  doc.text('Presión', 60, y)
+  doc.text('Observaciones', 90, y)
+
+  y += 6
+
+  mantenimientos.forEach(m => {
+    doc.text(String(m.id), 14, y)
+    doc.text(String(m.fecha), 30, y)
+    doc.text(m.presion_actual ? `${m.presion_actual} PSI` : '-', 60, y)
+
+    const obs = m.observaciones || ''
+    const obsLines = doc.splitTextToSize(obs, 100)
+    doc.text(obsLines, 90, y)
+
+    y += obsLines.length > 1 ? obsLines.length * 5 : 6
+
+    if (y > 280) {
+      doc.addPage()
+      y = 20
+    }
+  })
+
+  doc.save(`filtertrack_mantenimientos_filtro_${filtroId}.pdf`)
+}
