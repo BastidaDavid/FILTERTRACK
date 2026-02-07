@@ -2,7 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 console.log('SCRIPT CARGADO')
 
-const API_URL = 'http://localhost:3001/filtros'
+const API_BASE = window.API_BASE || 'http://localhost:3001'
+
+const API_URL = `${API_BASE}/filtros`
 let filtroEditandoId = null
 let filtrosCache = []
 let estadoFiltroActual = 'all'
@@ -177,7 +179,8 @@ async function cargarFiltros() {
     proximos.forEach(tr => tbody.appendChild(tr))
     ok.forEach(tr => tbody.appendChild(tr))
   } catch (error) {
-    console.error('Error cargando filtros:', error)
+    console.warn('Backend no disponible, frontend sigue activo')
+    console.warn(error.message)
   }
 }
 
@@ -239,7 +242,7 @@ async function eliminarFiltro(id) {
   if (!confirmar) return
 
   try {
-    const res = await fetch(`http://localhost:3001/filtros/${id}`, {
+    const res = await fetch(`${API_BASE}/filtros/${id}`, {
       method: 'DELETE'
     })
 
@@ -299,7 +302,7 @@ function verMantenimientos(filtroId) {
   document.getElementById('titulo-mantenimientos').innerText =
     `Mantenimientos del filtro ID ${filtroId}`
 
-  fetch(`http://localhost:3001/mantenimientos/${filtroId}`)
+  fetch(`${API_BASE}/mantenimientos/${filtroId}`)
     .then(res => res.json())
     .then(data => {
       const tbody = document.querySelector('#tabla-mantenimientos tbody')
@@ -332,7 +335,7 @@ if (formMantenimiento) {
     const fecha = document.getElementById('mant-fecha').value
     const observaciones = document.getElementById('mant-observaciones').value
 
-    fetch('http://localhost:3001/mantenimientos', {
+    fetch(`${API_BASE}/mantenimientos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -344,7 +347,7 @@ if (formMantenimiento) {
     })
       .then(res => res.json())
       .then(() => {
-        return fetch(`http://localhost:3001/filtros/${filtroActualId}`, {
+        return fetch(`${API_BASE}/filtros/${filtroActualId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -410,7 +413,7 @@ async function generarReporteFiltros() {
   doc.text('Reporte de Filtros', 14, 25)
   doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 32)
 
-  const res = await fetch('http://localhost:3001/filtros')
+  const res = await fetch(`${API_BASE}/filtros`)
   const filtros = await res.json()
 
   let y = 42
@@ -476,7 +479,7 @@ async function generarReporteMantenimientos() {
   doc.text(`Filtro ID: ${filtroId}`, 14, 32)
   doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 39)
 
-  const res = await fetch(`http://localhost:3001/mantenimientos/${filtroId}`)
+  const res = await fetch(`${API_BASE}/mantenimientos/${filtroId}`)
   const mantenimientos = await res.json()
 
   let y = 50
