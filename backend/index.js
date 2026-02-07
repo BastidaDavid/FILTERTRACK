@@ -76,14 +76,17 @@ app.post('/filtros', (req, res) => {
       estado: 'Activo'
     }
 
-    appendFiltroRow(nuevoFiltro)
-      .then(() => {
-        res.json({ message: 'Filtro agregado y sincronizado', id: this.lastID })
-      })
-      .catch(err => {
-        console.error('Error sincronizando con Google Sheets:', err.message)
-        res.json({ message: 'Filtro agregado (sin sync Sheets)', id: this.lastID })
-      })
+    ;(async () => {
+      try {
+        console.log('🧪 Enviando filtro a Google Sheets:', nuevoFiltro)
+        await appendFiltroRow(nuevoFiltro)
+        console.log('✅ Filtro sincronizado en Google Sheets')
+      } catch (err) {
+        console.warn('⚠️ Error sincronizando filtro en Sheets:', err.message)
+      }
+    })()
+
+    res.json({ message: 'Filtro agregado', id: this.lastID })
   })
 })
 
@@ -196,20 +199,20 @@ app.post('/mantenimientos', (req, res) => {
       observaciones
     }
 
-    appendMantenimientoRow(nuevoMantenimiento)
-      .then(() => {
-        res.json({
-          message: 'Mantenimiento registrado y sincronizado',
-          id: this.lastID
-        })
-      })
-      .catch(err => {
-        console.error('Error sincronizando mantenimiento en Sheets:', err.message)
-        res.json({
-          message: 'Mantenimiento registrado (sin sync Sheets)',
-          id: this.lastID
-        })
-      })
+    ;(async () => {
+      try {
+        console.log('🧪 Enviando mantenimiento a Google Sheets:', nuevoMantenimiento)
+        await appendMantenimientoRow(nuevoMantenimiento)
+        console.log('✅ Mantenimiento sincronizado en Google Sheets')
+      } catch (err) {
+        console.warn('⚠️ Error sincronizando mantenimiento en Sheets:', err.message)
+      }
+    })()
+
+    res.json({
+      message: 'Mantenimiento registrado',
+      id: this.lastID
+    })
   })
 })
 
@@ -234,6 +237,7 @@ app.get('/mantenimientos/:filtro_id', (req, res) => {
   })
 })
 
-app.listen(3001, () => {
-  console.log('Servidor activo en http://localhost:3001')
+const PORT = process.env.PORT || 3001
+app.listen(PORT, () => {
+  console.log(`Servidor activo en http://localhost:${PORT}`)
 })
