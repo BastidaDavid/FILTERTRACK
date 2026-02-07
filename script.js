@@ -2,7 +2,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 console.log('SCRIPT CARGADO')
 
-const API_BASE = window.API_BASE || 'http://localhost:3001'
+const API_BASE =
+  location.hostname.includes('github.io')
+    ? 'https://filtertrack-backend.onrender.com'
+    : 'http://localhost:3001'
 
 const API_URL = `${API_BASE}/filtros`
 let filtroEditandoId = null
