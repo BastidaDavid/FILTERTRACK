@@ -57,21 +57,22 @@ function calcularEstado(fechaInstalacion, vidaUtilDias) {
 }
 
 function calcularEstadoPorPresion(pressureInitial, pressureActual) {
-  if (!pressureInitial || !pressureActual) return null
+  if (pressureActual === null || pressureActual === undefined) return null
 
-  const drop = pressureInitial - pressureActual
+  const presion = Number(pressureActual)
 
-  if (drop > 10) {
+  // PRIORIDAD ABSOLUTA: PRESIÓN
+  if (presion <= 30) {
     return {
-      texto: 'Crítico (Presión)',
+      texto: 'Cambio inmediato',
       clase: 'estado-rojo',
       prioridad: 0
     }
   }
 
-  if (drop > 5) {
+  if (presion <= 45) {
     return {
-      texto: 'Advertencia (Presión)',
+      texto: 'Solicitar',
       clase: 'estado-amarillo',
       prioridad: 1
     }

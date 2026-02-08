@@ -25,6 +25,18 @@ if (hasSheetsEnv) {
   console.log('ℹ️ Google Sheets desactivado (entorno local)')
 }
 
+async function getSheetName(preferredName) {
+  const res = await sheets.spreadsheets.get({
+    spreadsheetId: SPREADSHEET_ID
+  })
+  const sheetsList = res.data.sheets.map(s => s.properties.title)
+
+  if (sheetsList.includes(preferredName)) return preferredName
+
+  console.warn(`⚠️ Hoja "${preferredName}" no encontrada. Usando primera hoja:`, sheetsList[0])
+  return sheetsList[0]
+}
+
 async function appendFiltroRow(filtro) {
   if (!sheets) return
 
@@ -40,9 +52,12 @@ async function appendFiltroRow(filtro) {
     new Date().toLocaleString()
   ]]
 
+  console.log('📤 Enviando filtro a Google Sheets', values)
+  const sheetName = await getSheetName('Filtros')
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Filtros!A1',
+    range: `${sheetName}!A2`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   })
@@ -60,9 +75,12 @@ async function appendMantenimientoRow(mantenimiento) {
     new Date().toLocaleString()
   ]]
 
+  console.log('📤 Enviando mantenimiento a Google Sheets', values)
+  const sheetName = await getSheetName('Mantenimientos')
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Mantenimientos!A1',
+    range: `${sheetName}!A2`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   })
