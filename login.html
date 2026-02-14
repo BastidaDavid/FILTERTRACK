@@ -12,27 +12,33 @@
   </form>
 
   <script>
-    const API = 'http://localhost:3000';
+    const API = 'https://filtertrack-backend.onrender.com';
 
     document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault();
 
-      const res = await fetch(`${API}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: document.getElementById('user').value,
-          password: document.getElementById('pass').value
-        })
-      });
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: document.getElementById('user').value,
+            password: document.getElementById('pass').value
+          })
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        window.location.href = 'index.html';
-      } else {
-        alert('Credenciales inválidas');
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          window.location.href = 'index.html';
+        } else {
+          alert(data.error || 'Credenciales inválidas');
+        }
+
+      } catch (err) {
+        alert('Error conectando con el servidor');
+        console.error(err);
       }
     });
   </script>
