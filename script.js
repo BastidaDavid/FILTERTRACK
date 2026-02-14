@@ -5,11 +5,32 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('SCRIPT V1 CLEAN LOADED')
 
-  const API_BASE = location.hostname.includes('github.io')
-    ? 'https://filtertrack-backend.onrender.com'
-    : 'http://localhost:3000'
+  const API_BASE =
+    location.hostname === 'localhost' ||
+    location.hostname === '127.0.0.1'
+      ? 'http://localhost:3000'
+      : 'https://filtertrack-backend.onrender.com'
 
   const API_URL = `${API_BASE}/filters`
+
+  // -----------------------------
+  // AUTH TOKEN HELPER
+  // -----------------------------
+  function getAuthHeaders(extra = {}) {
+    const token = localStorage.getItem('token')
+
+    if (!token) {
+      alert('Sesión expirada. Inicia sesión nuevamente.')
+      window.location.href = 'login.html'
+      return null
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...extra
+    }
+  }
 
   let filtroEditandoId = null
   let filtroActualId = null
@@ -41,39 +62,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // LOAD FILTERS
   // -----------------------------
   async function cargarFiltros() {
-    const res = await fetch(API_URL)
-    const filtros = await res.json()
+    try {
+      const headers = getAuthHeaders()
+      if (!headers) return
+      const res = await fetch(API_URL, { headers })
+      if (!res.ok) throw new Error('Error loading filters')
+      const filtros = await res.json()
 
-    const tbody = document.querySelector('#tabla-filtros tbody')
-    if (!tbody) return
-    tbody.innerHTML = ''
+      const tbody = document.querySelector('#tabla-filtros tbody')
+      if (!tbody) return
+      tbody.innerHTML = ''
 
-    filtros.forEach(f => {
-      const estado = calcularEstado(f.due_date)
+      filtros.forEach(f => {
+        const estado = calcularEstado(f.due_date)
 
-      const tr = document.createElement('tr')
-      tr.innerHTML = `
-        <td>${f.filter_id}</td>
-        <td>${f.area}</td>
-        <td>${f.equipment}</td>
-        <td>${f.location}</td>
-        <td>${f.brand} / ${f.model}</td>
-        <td>${formatISO(f.install_date)}</td>
-        <td>${formatISO(f.due_date)}</td>
-        <td>
-          <span class="badge ${estado.clase}">
-            ${estado.texto}
-            <div class="dias-restantes">${estado.dias} días</div>
-          </span>
-        </td>
-        <td>
-          <button onclick="editarFiltro('${f.filter_id}')">Editar</button>
-          <button onclick="eliminarFiltro('${f.filter_id}')">Archivar</button>
-          <button onclick="verHistorial('${f.filter_id}')">Historial</button>
-        </td>
-      `
-      tbody.appendChild(tr)
-    })
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td>${f.filter_id}</td>
+          <td>${f.area}</td>
+          <td>${f.equipment}</td>
+          <td>${f.location}</td>
+          <td>${f.brand} / ${f.model}</td>
+          <td>${formatISO(f.install_date)}</td>
+          <td>${formatISO(f.due_date)}</td>
+          <td>
+            <span class="badge ${estado.clase}">
+              ${estado.texto}
+              <div class="dias-restantes">${estado.dias} días</div>
+            </span>
+          </td>
+          <td>
+            <button onclick="editarFiltro('${f.filter_id}')">Editar</button>
+            <button onclick="eliminarFiltro('${f.filter_id}')">Archivar</button>
+            <button onclick="verHistorial('${f.filter_id}')">Historial</button>
+          </td>
+        `
+        tbody.appendChild(tr)
+      })
+    } catch (err) {
+      console.error('Error cargando filtros:', err)
+      alert('No se pudo conectar con el servidor.')
+    }
   }
 
   // -----------------------------
@@ -98,16 +127,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (filtroEditandoId) {
+        const headers = getAuthHeaders()
+        if (!headers) return
+
         await fetch(`${API_URL}/${filtroEditandoId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(data)
         })
         filtroEditandoId = null
       } else {
+        const headers = getAuthHeaders()
+        if (!headers) return
+
         await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(data)
         })
       }
@@ -121,7 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // EDIT
   // -----------------------------
   window.editarFiltro = async function (filterId) {
-    const res = await fetch(`${API_URL}/${filterId}`)
+    const headers = getAuthHeaders()
+    if (!headers) return
+    const res = await fetch(`${API_URL}/${filterId}`, { headers })
     const f = await res.json()
 
     filtroEditandoId = filterId
@@ -146,9 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
   window.eliminarFiltro = async function (filterId) {
     if (!confirm('¿Archivar filtro?')) return
 
+    const headers = getAuthHeaders()
+    if (!headers) return
+
     await fetch(`${API_URL}/${filterId}/archive`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ responsible: 'UI', notes: 'Archived from UI' })
     })
 
@@ -161,7 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.verHistorial = async function (filterId) {
     filtroActualId = filterId
 
-    const res = await fetch(`${API_URL}/${filterId}/events`)
+    const headers = getAuthHeaders()
+    if (!headers) return
+    const res = await fetch(`${API_URL}/${filterId}/events`, { headers })
     const events = await res.json()
 
     const tbody = document.querySelector('#tabla-mantenimientos tbody')
@@ -194,9 +236,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return
       }
 
+      const headers = getAuthHeaders()
+      if (!headers) return
+
       await fetch(`${API_URL}/${filtroActualId}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           event_type: document.getElementById('mant-motivo').value || 'SERVICE',
           event_date: document.getElementById('mant-fecha').value,
@@ -212,5 +257,9 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
 
-  cargarFiltros()
+  if (localStorage.getItem('token')) {
+    cargarFiltros()
+  } else {
+    window.location.href = 'login.html'
+  }
 })
