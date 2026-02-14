@@ -1,316 +1,123 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  padding: 20px;
-}
+/* ==============================
+   LOGIN SCREEN - FILTERTRACK
+   Clean Centered Version
+   ============================== */
 
-h1 {
-  font-family: 'Montserrat', sans-serif;
-  text-align: center;
-  font-size: 2.6rem;
-  letter-spacing: 6px;
-  margin-bottom: 16px;
-  color: #0f62fe;
-  text-transform: uppercase;
-}
-
-h1::after {
-  content: '';
-  display: block;
-  width: 120px;
-  height: 3px;
-  background: #0f62fe;
-  margin: 10px auto 0;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #ffffff;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
-}
-
-th {
-  background: #0f62fe;
-  color: white;
-}
-
-tr:nth-child(even) {
-  background: #f9f9f9;
-}
-
-form {
-  background: #ffffff;
-  padding: 16px;
-  margin-bottom: 20px;
-  border: 1px solid #ddd;
-}
-
-form input {
-  margin-right: 8px;
-  margin-bottom: 8px;
-  padding: 8px;
-}
-
-form button {
-  padding: 8px 16px;
-  background: #0f62fe;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-form button:hover {
-  background: #0043ce;
-}
-
-/* ===== Layout con panel lateral ===== */
-.layout {
+body.login-page {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: url('imgs/bk_login.png') no-repeat center center fixed;
+  background-size: cover;
+  min-height: 100vh;
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-/* Columna principal (filtros) */
-.col-filtros {
-  flex: 2;
-}
-
-/* ===== Panel lateral deslizante ===== */
-.col-mantenimientos {
-  position: fixed;
-  top: 0;
-  right: -420px; /* oculto por defecto */
-  width: 380px;
-  height: 100vh;
-  background: #ffffff;
-  border-left: 2px solid #ddd;
-  padding: 20px;
-  overflow-y: auto;
-  transition: right 0.35s ease;
-  z-index: 1000;
-}
-
-/* Cuando el panel está activo */
-.col-mantenimientos.activo {
-  right: 0;
-}
-
-/* Oscurecer fondo cuando panel está abierto */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.25);
-  z-index: 900;
-  display: none;
-}
-
-.overlay.activo {
-  display: block;
-}
-
-/* ===== Estados de filtros ===== */
-.badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: bold;
-  text-align: center;
-  min-width: 90px;
-}
-
-.estado-verde {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.estado-amarillo {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.estado-rojo {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.estado-naranja {
-  background: #ffedd5;
-  color: #9a3412;
-}
-
-/* ===== Barra de estados (contadores) ===== */
-.estado-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.estado-btn {
-  border: 1px solid #ddd;
-  background: #ffffff;
-  padding: 6px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.estado-btn:hover {
-  background: #f0f4ff;
-  border-color: #0f62fe;
-}
-
-.estado-btn.activo {
-  background: #0f62fe;
-  color: #ffffff;
-  border-color: #0f62fe;
-}
-
-.dias-restantes {
-  font-size: 11px;
-  font-weight: normal;
-  margin-top: 4px;
-  opacity: 0.85;
-}
-
-/* ===== Presión de filtros ===== */
-.presion-info {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #374151;
-}
-
-.presion-dato {
-  font-weight: bold;
-}
-
-/* Estados por presión */
-.presion-ok {
-  background: #dcfce7;
-  color: #166534;
-  border-left: 4px solid #16a34a;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-.presion-warning {
-  background: #fef9c3;
-  color: #854d0e;
-  border-left: 4px solid #eab308;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-.presion-critical {
-  background: #fee2e2;
-  color: #991b1b;
-  border-left: 4px solid #dc2626;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-/* Badge de presión */
-.badge-presion {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: bold;
-}
-
-
-/* ===== Botón imprimir minimal ===== */
-.btn-reporte {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 12px;
+  position: relative;
 }
 
-.btn-reporte:hover {
-  background: #0f62fe;
-  color: #ffffff;
-  border-color: #0f62fe;
+/* Dark overlay */
+body.login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 0;
 }
 
-/* ===== Botones de acciones (Editar / Eliminar / Mantenimiento) ===== */
-.btn-editar,
-.btn-eliminar,
-.btn-mantenimiento {
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  margin-right: 6px;
-  transition: all 0.2s ease;
+/* Login Card */
+.login-container {
+  position: relative;
+  z-index: 1;
+  width: 400px;
+  max-width: 92%;
+  padding: 50px 45px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+
+  color: white;
+  animation: fadeIn 0.6s ease forwards;
 }
 
-/* Editar */
-.btn-editar {
-  background: #e0f2fe;
-  color: #075985;
-}
-
-.btn-editar:hover {
-  background: #0ea5e9;
-  color: #ffffff;
-}
-
-/* Eliminar */
-.btn-eliminar {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.btn-eliminar:hover {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-/* Mantenimiento */
-.btn-mantenimiento {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.btn-mantenimiento:hover {
-  background: #eab308;
-  color: #ffffff;
-}
-
-/* ===== Fila crítica ===== */
-.fila-critica {
-  border-left: 4px solid #dc2626;
-  background: #fff5f5;
-}
-
-/* ===== Alerta superior ===== */
-.alerta-critica {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+/* Title */
+.login-container h1 {
+  margin: 0 0 10px 0;
   font-weight: 600;
+  letter-spacing: 2px;
+  font-size: 22px;
+}
+
+/* Inputs */
+.login-container input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: #ffffff;
+  color: #111;
+  box-sizing: border-box;
+}
+
+/* Input focus */
+.login-container input:focus {
+  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.4);
+}
+
+/* Button */
+.login-container button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #00c853;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+/* Button hover */
+.login-container button:hover {
+  background: #00a844;
+}
+
+/* Smooth fade animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subtitle style */
+.login-container p {
+  margin: 0 0 20px 0;
+  opacity: 0.75;
+  font-size: 14px;
+}
+
+/* Improve input spacing */
+.login-container input {
+  margin-bottom: 8px;
+}
+
+/* Stronger button hover effect */
+.login-container button:hover {
+  background: #00a844;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 200, 83, 0.4);
 }

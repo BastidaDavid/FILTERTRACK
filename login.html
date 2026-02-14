@@ -1,15 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>FilterTrack Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FilterTrack | Login</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <h2>FilterTrack</h2>
-  <form id="login-form">
-    <input id="user" placeholder="Usuario" required />
-    <input id="pass" type="password" placeholder="Contraseña" required />
-    <button>Entrar</button>
-  </form>
+<body class="login-page">
+
+ 
+
+  <div class="login-container">
+      <h1>FilterTrack</h1>
+      <p style="opacity:0.7; font-size:14px; margin-bottom:20px;">Sistema de Gestión de Filtros</p>
+
+      <form id="login-form" class="login-form">
+        <div class="input-group">
+          <input id="user" type="text" placeholder="Usuario" required />
+        </div>
+
+        <div class="input-group">
+          <input id="pass" type="password" placeholder="Contraseña" required />
+        </div>
+
+        <button type="submit">Entrar</button>
+      </form>
+  </div>
 
   <script>
     const API = 'https://filtertrack-backend.onrender.com';
@@ -42,5 +58,6 @@
       }
     });
   </script>
+
 </body>
 </html>
