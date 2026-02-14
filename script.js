@@ -5,12 +5,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('SCRIPT V1 CLEAN LOADED')
 
-  const API_BASE =
-    location.hostname === 'localhost' ||
-    location.hostname === '127.0.0.1'
-      ? 'http://localhost:3000'
-      : 'https://filtertrack-backend.onrender.com'
-
+  // ===== PRODUCTION API CONFIG =====
+  const API_BASE = 'https://filtertrack-backend.onrender.com'
   const API_URL = `${API_BASE}/filters`
 
   // -----------------------------
@@ -30,6 +26,28 @@ document.addEventListener('DOMContentLoaded', () => {
       Authorization: `Bearer ${token}`,
       ...extra
     }
+  }
+
+  // -----------------------------
+  // SECURE FETCH (handles 401 auto logout)
+  // -----------------------------
+  async function secureFetch(url, options = {}) {
+    const headers = getAuthHeaders(options.headers || {})
+    if (!headers) return
+
+    const response = await fetch(url, {
+      ...options,
+      headers
+    })
+
+    if (response.status === 401) {
+      localStorage.removeItem('token')
+      alert('Sesión expirada. Inicia sesión nuevamente.')
+      window.location.href = 'login.html'
+      return
+    }
+
+    return response
   }
 
   let filtroEditandoId = null
@@ -63,10 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // -----------------------------
   async function cargarFiltros() {
     try {
-      const headers = getAuthHeaders()
-      if (!headers) return
-      const res = await fetch(API_URL, { headers })
-      if (!res.ok) throw new Error('Error loading filters')
+      const res = await secureFetch(API_URL)
+      if (!res || !res.ok) throw new Error('Error loading filters')
       const filtros = await res.json()
 
       const tbody = document.querySelector('#tabla-filtros tbody')
@@ -127,22 +143,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (filtroEditandoId) {
-        const headers = getAuthHeaders()
-        if (!headers) return
-
-        await fetch(`${API_URL}/${filtroEditandoId}`, {
+        await secureFetch(`${API_URL}/${filtroEditandoId}`, {
           method: 'PUT',
-          headers,
           body: JSON.stringify(data)
         })
         filtroEditandoId = null
       } else {
-        const headers = getAuthHeaders()
-        if (!headers) return
-
-        await fetch(API_URL, {
+        await secureFetch(API_URL, {
           method: 'POST',
-          headers,
           body: JSON.stringify(data)
         })
       }
@@ -156,9 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // EDIT
   // -----------------------------
   window.editarFiltro = async function (filterId) {
-    const headers = getAuthHeaders()
-    if (!headers) return
-    const res = await fetch(`${API_URL}/${filterId}`, { headers })
+    const res = await secureFetch(`${API_URL}/${filterId}`)
+    if (!res || !res.ok) return
     const f = await res.json()
 
     filtroEditandoId = filterId
@@ -183,12 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.eliminarFiltro = async function (filterId) {
     if (!confirm('¿Archivar filtro?')) return
 
-    const headers = getAuthHeaders()
-    if (!headers) return
-
-    await fetch(`${API_URL}/${filterId}/archive`, {
+    await secureFetch(`${API_URL}/${filterId}/archive`, {
       method: 'PATCH',
-      headers,
       body: JSON.stringify({ responsible: 'UI', notes: 'Archived from UI' })
     })
 
@@ -201,9 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.verHistorial = async function (filterId) {
     filtroActualId = filterId
 
-    const headers = getAuthHeaders()
-    if (!headers) return
-    const res = await fetch(`${API_URL}/${filterId}/events`, { headers })
+    const res = await secureFetch(`${API_URL}/${filterId}/events`)
+    if (!res || !res.ok) return
     const events = await res.json()
 
     const tbody = document.querySelector('#tabla-mantenimientos tbody')
@@ -236,12 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return
       }
 
-      const headers = getAuthHeaders()
-      if (!headers) return
-
-      await fetch(`${API_URL}/${filtroActualId}/events`, {
+      await secureFetch(`${API_URL}/${filtroActualId}/events`, {
         method: 'POST',
-        headers,
         body: JSON.stringify({
           event_type: document.getElementById('mant-motivo').value || 'SERVICE',
           event_date: document.getElementById('mant-fecha').value,
