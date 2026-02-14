@@ -5,6 +5,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
+if (JWT_SECRET === 'dev-secret-change-in-production') {
+  console.warn('⚠️  WARNING: Using default JWT secret. Set JWT_SECRET in production!');
+}
+
 const { db, initSchema } = require('./database');
 const { isoToday, addMonths, calcStatus } = require('./utils');
 
@@ -45,19 +49,24 @@ function authMiddleware(req, res, next) {
 }
 
 app.post('/auth/register', async (req, res) => {
-  const { user_id, password } = req.body;
+  const { user_id, password, org_id } = req.body;
 
-  if (!user_id || !password)
-    return res.status(400).json({ error: 'user_id and password required' });
+  if (!user_id || !password || !org_id)
+    return res.status(400).json({ error: 'user_id, password and org_id required' });
 
   const hash = await bcrypt.hash(password, 10);
   const ts = new Date().toISOString();
 
   db.run(
-    'INSERT INTO users (user_id, password_hash, created_at) VALUES (?, ?, ?)',
-    [user_id, hash, ts],
+    'INSERT INTO users (user_id, org_id, password_hash, created_at) VALUES (?, ?, ?, ?)',
+    [user_id, org_id, hash, ts],
     (err) => {
-      if (err) return res.status(500).json({ error: 'User already exists' });
+      if (err) {
+        if (err.message && err.message.includes('UNIQUE')) {
+          return res.status(400).json({ error: 'User already exists' });
+        }
+        return res.status(500).json({ error: err.message });
+      }
       res.json({ message: 'User created' });
     }
   );
@@ -66,16 +75,32 @@ app.post('/auth/register', async (req, res) => {
 app.post('/auth/login', (req, res) => {
   const { user_id, password } = req.body;
 
+  if (!user_id || !password) {
+    return res.status(400).json({ error: 'user_id and password required' });
+  }
+
   db.get(
     'SELECT * FROM users WHERE user_id = ?',
     [user_id],
     async (err, user) => {
-      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
 
       const valid = await bcrypt.compare(password, user.password_hash);
-      if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+      if (!valid) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
 
-      const token = jwt.sign({ user_id }, JWT_SECRET, { expiresIn: '8h' });
+      const token = jwt.sign(
+        { user_id: user.user_id, org_id: user.org_id },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+      );
 
       res.json({ token });
     }
@@ -104,6 +129,10 @@ function validateCreatePayload(body) {
 }
 
 function createFilter(body, res) {
+  const org_id = body._org_id;
+  if (!org_id) {
+    return res.status(400).json({ error: 'Missing org_id context' });
+  }
   const missing = validateCreatePayload(body);
   if (missing.length) {
     return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
@@ -128,15 +157,16 @@ function createFilter(body, res) {
 
   const sql = `
     INSERT INTO filters (
-      filter_id, area, equipment, location, brand, model,
+      org_id, filter_id, area, equipment, location, brand, model,
       install_date, life_months, due_date, status, responsible, notes,
       record_state, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
   `;
 
   db.run(
     sql,
     [
+      org_id,
       filter_id,
       area,
       equipment,
@@ -176,7 +206,8 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // Create filter
 app.post('/filters', authMiddleware, (req, res) => {
-  return createFilter(req.body, res);
+  const body = { ...req.body, _org_id: req.user.org_id };
+  return createFilter(body, res);
 });
 
 // List filters (optional query: area, status, state)
@@ -184,6 +215,10 @@ function listFilters(req, res) {
   const { area, status, state, q } = req.query;
   const clauses = [];
   const params = [];
+
+  const org_id = req.user.org_id;
+  clauses.push('org_id = ?');
+  params.push(org_id);
 
   if (area) {
     clauses.push('area = ?');
@@ -222,7 +257,7 @@ app.get('/filters', authMiddleware, (req, res) => {
 // Get one filter
 app.get('/filters/:filter_id', authMiddleware, (req, res) => {
   const { filter_id } = req.params;
-  db.get('SELECT * FROM filters WHERE filter_id = ?', [filter_id], (err, row) => {
+  db.get('SELECT * FROM filters WHERE filter_id = ? AND org_id = ?', [filter_id, req.user.org_id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Filter not found' });
     res.json(row);
@@ -245,7 +280,7 @@ app.put('/filters/:filter_id', authMiddleware, (req, res) => {
   ];
 
   // Read existing first
-  db.get('SELECT * FROM filters WHERE filter_id = ?', [filter_id], (err, current) => {
+  db.get('SELECT * FROM filters WHERE filter_id = ? AND org_id = ?', [filter_id, req.user.org_id], (err, current) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!current) return res.status(404).json({ error: 'Filter not found' });
 
@@ -266,7 +301,7 @@ app.put('/filters/:filter_id', authMiddleware, (req, res) => {
       SET area=?, equipment=?, location=?, brand=?, model=?,
           install_date=?, life_months=?, due_date=?, status=?,
           responsible=?, notes=?, updated_at=?
-      WHERE filter_id=?
+      WHERE filter_id=? AND org_id=?
     `;
 
     db.run(
@@ -284,7 +319,8 @@ app.put('/filters/:filter_id', authMiddleware, (req, res) => {
         updated.responsible,
         updated.notes || null,
         ts,
-        filter_id
+        filter_id,
+        req.user.org_id
       ],
       function (err2) {
         if (err2) return res.status(500).json({ error: err2.message });
@@ -310,8 +346,8 @@ app.patch('/filters/:filter_id/archive', authMiddleware, (req, res) => {
   const ts = nowIso();
 
   db.run(
-    "UPDATE filters SET record_state='ARCHIVED', updated_at=? WHERE filter_id=?",
-    [ts, filter_id],
+    "UPDATE filters SET record_state='ARCHIVED', updated_at=? WHERE filter_id=? AND org_id=?",
+    [ts, filter_id, req.user.org_id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       if (this.changes === 0) return res.status(404).json({ error: 'Filter not found' });
@@ -349,7 +385,7 @@ app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'new_filter_id, install_date, life_months, responsible are required' });
   }
 
-  db.get('SELECT * FROM filters WHERE filter_id = ?', [filter_id], (err, current) => {
+  db.get('SELECT * FROM filters WHERE filter_id = ? AND org_id = ?', [filter_id, req.user.org_id], (err, current) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!current) return res.status(404).json({ error: 'Filter not found' });
 
@@ -372,7 +408,7 @@ app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
 
     db.serialize(() => {
       // 1) archive current
-      db.run("UPDATE filters SET record_state='ARCHIVED', updated_at=? WHERE filter_id=?", [ts, filter_id]);
+      db.run("UPDATE filters SET record_state='ARCHIVED', updated_at=? WHERE filter_id=? AND org_id=?", [ts, filter_id, req.user.org_id]);
 
       // 2) log REPLACE event on old
       db.run(
@@ -384,15 +420,16 @@ app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
       // 3) create new filter
       const createSql = `
         INSERT INTO filters (
-          filter_id, area, equipment, location, brand, model,
+          org_id, filter_id, area, equipment, location, brand, model,
           install_date, life_months, due_date, status, responsible, notes,
           record_state, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
       `;
 
       db.run(
         createSql,
         [
+          req.user.org_id,
           next.filter_id,
           next.area,
           next.equipment,
