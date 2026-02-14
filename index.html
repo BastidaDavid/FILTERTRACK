@@ -7,17 +7,36 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+  </script>
+
   <div class="layout">
     <div class="col-filtros">
       <h1 class="app-title">FILTERTRACK</h1>
+      <button id="btn-logout" style="float:right;">Cerrar sesión</button>
 
       <form id="form-filtro">
-         <h2>Agregar filtro</h2>
-        <input type="text" id="nombre" name="nombre" placeholder="Nombre del filtro" required />
-        <input type="text" id="codigo" name="codigo_barra" placeholder="Código de barra" required />
-        <input type="date" id="fecha" name="fecha_instalacion" required />
-        <input type="number" id="vida" name="vida_util_dias" placeholder="Vida útil (días)" required />
-        <input type="number" id="pressure-initial" name="pressure_initial" placeholder="Presión inicial (PSI)" required />
+        <h2>Agregar filtro (V1)</h2>
+
+        <input type="text" id="filter-id" name="filter_id" placeholder="Filter ID (ej. FT-BAR-ICE-001)" required />
+        <input type="text" id="area" name="area" placeholder="Área (ej. BAR)" required />
+        <input type="text" id="equipment" name="equipment" placeholder="Equipo/Máquina (ej. ICE-01)" required />
+        <input type="text" id="location" name="location" placeholder="Ubicación exacta" required />
+
+        <input type="text" id="brand" name="brand" placeholder="Marca" required />
+        <input type="text" id="model" name="model" placeholder="Modelo" required />
+
+        <input type="date" id="install-date" name="install_date" required />
+        <input type="number" id="life-months" name="life_months" placeholder="Vida útil (meses)" min="1" step="1" required />
+
+        <input type="text" id="responsible" name="responsible" placeholder="Responsable (iniciales o nombre)" required />
+        <input type="text" id="notes" name="notes" placeholder="Notas (opcional)" />
+
         <button type="submit">Guardar filtro</button>
         <button type="button" id="btn-limpiar">Limpiar campos</button>
       </form>
@@ -36,18 +55,20 @@
         </button>
       </div>
 
-      <button id="btn-reporte-filtros" class="btn-reporte">
-        🖨️ Generar reporte de filtros
+      <button id="btn-reporte-filtros" class="btn-reporte" title="Generar reporte de filtros">
+        🖨️
       </button>
 
       <table id="tabla-filtros">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Código</th>
-            <th>Fecha instalación</th>
-            <th>Presión (PSI)</th>
+            <th>Filter ID</th>
+            <th>Área</th>
+            <th>Equipo</th>
+            <th>Ubicación</th>
+            <th>Marca/Modelo</th>
+            <th>Instalación</th>
+            <th>Vence</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -60,9 +81,9 @@
 
     <div class="col-mantenimientos">
       <button id="btn-cerrar-panel" style="float:right;">✕</button>
-      <h2>Mantenimientos del filtro</h2>
-      <button id="btn-reporte-mantenimientos" class="btn-reporte">
-        🖨️ Generar reporte de mantenimientos
+      <h2>Historial del filtro</h2>
+      <button id="btn-reporte-mantenimientos" class="btn-reporte" title="Generar reporte de historial">
+        🖨️
       </button>
 
       <div id="seccion-mantenimientos" style="display:none;">
@@ -70,9 +91,18 @@
 
         <form id="form-mantenimiento">
           <input type="date" id="mant-fecha" required />
-          <input type="text" id="mant-observaciones" placeholder="Observaciones" />
-          <input type="number" id="mant-pressure-current" placeholder="Presión actual (PSI)" />
-          <button type="submit">Guardar mantenimiento</button>
+          <select id="mant-motivo" required>
+            <option value="">Motivo</option>
+            <option value="Programado">Programado</option>
+            <option value="Emergencia">Emergencia</option>
+            <option value="Calidad">Calidad</option>
+            <option value="Flujo bajo">Flujo bajo</option>
+            <option value="Daño">Daño</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <input type="text" id="mant-responsable" placeholder="Responsable" required />
+          <input type="text" id="mant-observaciones" placeholder="Notas / Observaciones" />
+          <button type="submit">Guardar evento</button>
         </form>
 
         <table id="tabla-mantenimientos">
@@ -80,7 +110,9 @@
             <tr>
               <th>ID</th>
               <th>Fecha</th>
-              <th>Observaciones</th>
+              <th>Motivo</th>
+              <th>Responsable</th>
+              <th>Notas</th>
             </tr>
           </thead>
           <tbody>
@@ -92,6 +124,12 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    document.getElementById('btn-logout')?.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    });
+  </script>
   <script src="script.js"></script>
   <div id="overlay" class="overlay"></div>
 </body>

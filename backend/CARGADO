@@ -1,0 +1,108 @@
+Script started on Wed Feb 11 16:35:12 2026
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mcd filtros-project[27m
+[7mcd backend[27m[K[A[32C[27mc[27md[27m [27mf[27mi[27ml[27mt[27mr[27mo[27ms[27m-[27mp[27mr[27mo[27mj[27me[27mc[27mt[1B[27mc[27md[27m [27mb[27ma[27mc[27mk[27me[27mn[27md[?2004l
+cd: no such file or directory: filtros-project
+cd: no such file or directory: backend
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla mantenimientos lista
+Tabla filtros lista
+^C
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: ⚙️  enable debug logging with { debug: true }[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla filtros lista
+Tabla mantenimientos lista
+DELETE solicitado para filtro ID: 1
+^C
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla mantenimientos lista
+Tabla filtros lista
+🧪 Enviando filtro a Google Sheets: {
+  id: [33m3[39m,
+  nombre: [32m'David_prueba5'[39m,
+  codigo_barra: [32m'123'[39m,
+  fecha_instalacion: [32m'2026-02-11'[39m,
+  vida_util_dias: [32m'180'[39m,
+  pressure_initial: [32m'60'[39m,
+  presion_actual: [1mnull[22m,
+  estado: [32m'Activo'[39m
+}
+✅ Filtro sincronizado en Google Sheets
+ç ^C
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: ⚙️  enable debug logging with { debug: true }[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla mantenimientos lista
+Tabla filtros lista
+^C
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla mantenimientos lista
+Tabla filtros lista
+^C
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla filtros lista
+Tabla mantenimientos lista
+🧪 Enviando filtro a Google Sheets: {
+  id: [33m4[39m,
+  nombre: [32m'David_Prueba1'[39m,
+  codigo_barra: [32m'123'[39m,
+  fecha_instalacion: [32m'2026-02-11'[39m,
+  vida_util_dias: [32m'180'[39m,
+  pressure_initial: [32m'100'[39m,
+  presion_actual: [1mnull[22m,
+  estado: [32m'Activo'[39m
+}
+✅ Filtro sincronizado en Google Sheets
+DELETE solicitado para filtro ID: 3
+DELETE solicitado para filtro ID: 4
+^^C  ^C
+[1m[7m%[27m[1m[0m                                                                                                                                    [0m[27m[24m[Jdavidbastida@Davids-MacBook-Pro backend % [K[?2004h[7mnode index.js[27m[13D[27mn[27mo[27md[27me[27m [27mi[27mn[27md[27me[27mx[27m.[27mj[27ms[?2004l
+[dotenv@17.2.4] injecting env (1) from .env [2m-- tip: ⚙️  enable debug logging with { debug: true }[0m
+ℹ️ Google Sheets desactivado (entorno local)
+Servidor activo en http://localhost:3001
+Base de datos conectada 🚰
+Tabla filtros lista
+Tabla mantenimientos lista
+🧪 Enviando filtro a Google Sheets: {
+  id: [33m5[39m,
+  nombre: [32m'Machine_02'[39m,
+  codigo_barra: [32m'123'[39m,
+  fecha_instalacion: [32m'2026-02-11'[39m,
+  vida_util_dias: [32m'180'[39m,
+  pressure_initial: [32m'100'[39m,
+  presion_actual: [1mnull[22m,
+  estado: [32m'Activo'[39m
+}
+✅ Filtro sincronizado en Google Sheets
+DELETE solicitado para filtro ID: 5
+🧪 Enviando filtro a Google Sheets: {
+  id: [33m6[39m,
+  nombre: [32m'David_prueba5'[39m,
+  codigo_barra: [32m'123'[39m,
+  fecha_instalacion: [32m'2026-02-12'[39m,
+  vida_util_dias: [32m'180'[39m,
+  pressure_initial: [32m'100'[39m,
+  presion_actual: [1mnull[22m,
+  estado: [32m'Activo'[39m
+}
+✅ Filtro sincronizado en Google Sheets
