@@ -812,6 +812,18 @@ app.post('/machines', authMiddleware, async (req, res) => {
   }
 
   try {
+    // --- Suggested filter_type logic ---
+    let suggested_filter_type = null;
+    if (model_id) {
+      const modelResult = await db.query(
+        `SELECT filter_type FROM machine_models WHERE id = $1`,
+        [model_id]
+      );
+      if (modelResult.rows.length > 0) {
+        suggested_filter_type = modelResult.rows[0].filter_type;
+      }
+    }
+
     const ts = nowIso();
 
     await db.query(
@@ -830,7 +842,11 @@ app.post('/machines', authMiddleware, async (req, res) => {
       ]
     );
 
-    res.json({ message: 'Machine created', machine_id });
+    res.json({
+      message: 'Machine created',
+      machine_id,
+      suggested_filter_type
+    });
 
   } catch (err) {
     if (err.code === '23505') {
@@ -938,6 +954,30 @@ app.post('/filtros', authMiddleware, (req, res) => {
 
 app.get('/filtros', authMiddleware, (req, res) => {
   return listFilters(req, res);
+});
+
+// ==============================
+// MACHINE MODELS (by brand_id param)
+// ==============================
+
+app.get('/machine-models/:brand_id', authMiddleware, async (req, res) => {
+  const { brand_id } = req.params;
+
+  try {
+    const result = await db.query(
+      `SELECT id, model_name, filter_type
+       FROM machine_models
+       WHERE brand_id = $1
+       ORDER BY model_name ASC`,
+      [brand_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error('Machine models by param error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // --- Server ---
