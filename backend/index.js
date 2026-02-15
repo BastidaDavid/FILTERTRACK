@@ -980,6 +980,56 @@ app.get('/machine-models/:brand_id', authMiddleware, async (req, res) => {
   }
 });
 
+// ==============================
+// SEED MACHINE BRANDS (TEMPORAL)
+// ==============================
+app.post('/seed/brands', async (req, res) => {
+  try {
+    const brands = [
+      ['Scotsman', 'ICE'],
+      ['Hoshizaki', 'ICE'],
+      ['Manitowoc', 'ICE'],
+      ['Follett', 'ICE'],
+      ['Ice-O-Matic', 'ICE'],
+      ['Kold-Draft', 'ICE'],
+      ['Cornelius', 'ICE'],
+      ['Brema', 'ICE'],
+      ['ITV Ice Makers', 'ICE'],
+      ['Electrolux', 'ICE'],
+      ['Whirlpool Commercial', 'ICE'],
+      ['GE Commercial', 'ICE'],
+      ['Summit Commercial', 'ICE'],
+      ['Maxx Ice', 'ICE'],
+      ['Lancer', 'SODA'],
+      ['Multiplex', 'SODA'],
+      ['Bunn', 'COFFEE'],
+      ['Curtis', 'COFFEE'],
+      ['Franke', 'COFFEE'],
+      ['Taylor', 'SOFT_SERVE'],
+      ['Stoelting', 'SOFT_SERVE'],
+      ['True Manufacturing', 'REFRIGERATION'],
+      ['Turbo Air', 'REFRIGERATION'],
+      ['Hobart', 'DISHWASHER'],
+      ['Jackson', 'DISHWASHER']
+    ];
+
+    for (const [name, category] of brands) {
+      await db.query(
+        `INSERT INTO machine_brands (name, category)
+         VALUES ($1, $2)
+         ON CONFLICT (name) DO NOTHING`,
+        [name, category]
+      );
+    }
+
+    res.json({ message: 'Machine brands seeded successfully' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Seed failed' });
+  }
+});
+
 // --- Server ---
 const PORT = Number(process.env.PORT || 3000);
 app.listen(PORT, () => {
