@@ -757,9 +757,55 @@ app.post('/filters/:filter_id/events', authMiddleware, async (req, res) => {
 // MACHINES (V1) — Professional structure
 // ==============================
 
+// ==============================
+// MACHINE BRANDS
+// ==============================
+
+app.get('/machine-brands', authMiddleware, async (_req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, name, category
+       FROM machine_brands
+       ORDER BY name ASC`
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Machine brands error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==============================
+// MACHINE MODELS (by brand)
+// ==============================
+
+app.get('/machine-models', authMiddleware, async (req, res) => {
+  const { brand_id } = req.query;
+
+  if (!brand_id) {
+    return res.status(400).json({ error: 'brand_id query param required' });
+  }
+
+  try {
+    const result = await db.query(
+      `SELECT id, model_name, filter_type
+       FROM machine_models
+       WHERE brand_id = $1
+       ORDER BY model_name ASC`,
+      [brand_id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Machine models error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create machine
 app.post('/machines', authMiddleware, async (req, res) => {
-  const { machine_id, area, location, brand, model, serial_number } = req.body;
+  const { machine_id, area, location, brand_id, model_id, serial_number } = req.body;
 
   if (!machine_id) {
     return res.status(400).json({ error: 'machine_id is required' });
@@ -770,15 +816,15 @@ app.post('/machines', authMiddleware, async (req, res) => {
 
     await db.query(
       `INSERT INTO machines
-       (machine_id, org_id, area, location, brand, model, serial_number, created_at)
+       (machine_id, org_id, area, location, brand_id, model_id, serial_number, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [
         machine_id,
         req.user.org_id,
         area || null,
         location || null,
-        brand || null,
-        model || null,
+        brand_id || null,
+        model_id || null,
         serial_number || null,
         ts
       ]
@@ -799,10 +845,19 @@ app.post('/machines', authMiddleware, async (req, res) => {
 app.get('/machines', authMiddleware, async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT *
-       FROM machines
-       WHERE org_id = $1
-       ORDER BY created_at DESC`,
+      `SELECT m.machine_id,
+             m.area,
+             m.location,
+             m.serial_number,
+             b.name AS brand_name,
+             mm.model_name,
+             mm.filter_type,
+             m.created_at
+       FROM machines m
+       LEFT JOIN machine_brands b ON m.brand_id = b.id
+       LEFT JOIN machine_models mm ON m.model_id = mm.id
+       WHERE m.org_id = $1
+       ORDER BY m.created_at DESC`,
       [req.user.org_id]
     );
 

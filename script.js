@@ -226,8 +226,14 @@ document.addEventListener('DOMContentLoaded', () => {
     formFiltro.addEventListener('submit', async (e) => {
       e.preventDefault()
 
+      if (!maquinaSeleccionadaId) {
+        alert('Selecciona una máquina antes de agregar un filtro')
+        return
+      }
+
       const data = {
         filter_id: document.getElementById('filter-id').value.trim(),
+        machine_id: maquinaSeleccionadaId,
         area: document.getElementById('area').value.trim(),
         equipment: document.getElementById('equipment').value.trim(),
         location: document.getElementById('location').value.trim(),
@@ -458,7 +464,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (localStorage.getItem('token')) {
     cargarMaquinas()
-    cargarFiltros()
   } else {
     window.location.href = 'login.html'
   }
