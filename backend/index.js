@@ -111,6 +111,30 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+// =====================
+// DEBUG - RESET PASSWORD (TEMPORAL)
+// =====================
+app.post('/debug/reset-password', async (req, res) => {
+  const { user_id, new_password } = req.body;
+
+  if (!user_id || !new_password) {
+    return res.status(400).json({ error: 'user_id and new_password required' });
+  }
+
+  try {
+    const hash = await bcrypt.hash(new_password, 10);
+
+    await db.query(
+      'UPDATE users SET password_hash = $1 WHERE user_id = $2',
+      [hash, user_id]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Helpers ---
 function nowIso() {
   return new Date().toISOString();
@@ -123,8 +147,8 @@ function validateCreatePayload(body) {
     'area',
     'equipment',
     'location',
-    'brand',
-    'model',
+    'brand_id',
+    'model_id',
     'install_date',
     'life_months',
     'responsible'
@@ -150,8 +174,8 @@ async function createFilter(body, res) {
     area,
     equipment,
     location,
-    brand,
-    model,
+    brand_id,
+    model_id,
     install_date,
     life_months,
     responsible,
@@ -175,7 +199,7 @@ async function createFilter(body, res) {
   try {
     await db.query(
       `INSERT INTO filters (
-        org_id, filter_id, machine_id, area, equipment, location, brand, model,
+        org_id, filter_id, machine_id, area, equipment, location, brand_id, model_id,
         install_date, life_months, due_date, status, responsible, notes,
         record_state, created_at, updated_at
       ) VALUES (
@@ -190,8 +214,8 @@ async function createFilter(body, res) {
         area,
         equipment,
         location,
-        brand,
-        model,
+        brand_id,
+        model_id,
         install_date,
         Number(life_months),
         due_date,
@@ -956,26 +980,80 @@ app.get('/filtros', authMiddleware, (req, res) => {
   return listFilters(req, res);
 });
 
-// ==============================
-// MACHINE MODELS (by brand_id param)
-// ==============================
 
-app.get('/machine-models/:brand_id', authMiddleware, async (req, res) => {
-  const { brand_id } = req.params;
+// ==============================
+// GET FILTER SUGERIDO POR MODELO
+// ==============================
+app.get('/machine-models/:id/filter', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `SELECT filter_type
+       FROM machine_models
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Model not found' });
+    }
+
+    res.json({
+      filter_type: result.rows[0].filter_type
+    });
+
+  } catch (err) {
+    console.error('Filter type fetch error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==============================
+// GET MODEL BY ID (clean route)
+// ==============================
+app.get('/machine-models/model/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
 
   try {
     const result = await db.query(
       `SELECT id, model_name, filter_type
        FROM machine_models
-       WHERE brand_id = $1
-       ORDER BY model_name ASC`,
-      [brand_id]
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Model not found' });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error('Model fetch error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==============================
+// GET FILTERS BY MODEL (multi-filter support)
+// ==============================
+app.get('/machine-models/:id/filters', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `SELECT id, filter_name, life_months, notes
+       FROM model_filters
+       WHERE model_id = $1
+       ORDER BY filter_name ASC`,
+      [id]
     );
 
     res.json(result.rows);
 
   } catch (err) {
-    console.error('Machine models by param error:', err);
+    console.error('Model filters error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1027,6 +1105,48 @@ app.post('/seed/brands', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Seed failed' });
+  }
+});
+
+// ==============================
+// DEBUG - CREATE MODEL_FILTERS TABLE (TEMPORAL)
+// ==============================
+app.get('/debug/create-model-filters', async (_req, res) => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS model_filters (
+        id SERIAL PRIMARY KEY,
+        model_id INTEGER NOT NULL REFERENCES machine_models(id) ON DELETE CASCADE,
+        filter_name VARCHAR(100) NOT NULL,
+        life_months INTEGER NOT NULL,
+        notes TEXT
+      );
+    `);
+
+    res.json({ message: 'model_filters table created successfully' });
+  } catch (err) {
+    console.error('Create model_filters error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==============================
+// DEBUG - SEED MODEL FILTERS (TEMPORAL)
+// ==============================
+app.get('/debug/seed-model-filters', async (_req, res) => {
+  try {
+    await db.query(`
+      INSERT INTO model_filters (model_id, filter_name, life_months)
+      VALUES 
+        (1, 'Everpure 4FC', 6),
+        (2, 'Everpure 7FC', 12)
+      ON CONFLICT DO NOTHING;
+    `);
+
+    res.json({ message: 'Model filters seeded successfully' });
+  } catch (err) {
+    console.error('Seed model_filters error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
