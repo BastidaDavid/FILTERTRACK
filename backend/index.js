@@ -119,6 +119,7 @@ function nowIso() {
 function validateCreatePayload(body) {
   const required = [
     'filter_id',
+    'machine_id',
     'area',
     'equipment',
     'location',
@@ -145,6 +146,7 @@ async function createFilter(body, res) {
 
   const {
     filter_id,
+    machine_id,
     area,
     equipment,
     location,
@@ -156,6 +158,16 @@ async function createFilter(body, res) {
     notes
   } = body;
 
+  // Validate machine exists
+  const machineCheck = await db.query(
+    `SELECT machine_id FROM machines WHERE machine_id = $1 AND org_id = $2`,
+    [body.machine_id, org_id]
+  );
+
+  if (machineCheck.rows.length === 0) {
+    return res.status(400).json({ error: 'Machine not found for this organization' });
+  }
+
   const due_date = addMonths(install_date, life_months);
   const status = calcStatus(due_date);
   const ts = nowIso();
@@ -163,17 +175,18 @@ async function createFilter(body, res) {
   try {
     await db.query(
       `INSERT INTO filters (
-        org_id, filter_id, area, equipment, location, brand, model,
+        org_id, filter_id, machine_id, area, equipment, location, brand, model,
         install_date, life_months, due_date, status, responsible, notes,
         record_state, created_at, updated_at
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,
-        $8,$9,$10,$11,$12,$13,
-        'ACTIVE',$14,$15
+        $1,$2,$3,$4,$5,$6,$7,$8,
+        $9,$10,$11,$12,$13,$14,
+        'ACTIVE',$15,$16
       )`,
       [
         org_id,
         filter_id,
+        machine_id,
         area,
         equipment,
         location,
@@ -821,6 +834,29 @@ app.get('/machines/:machine_id', authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error('Get machine error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List filters for a specific machine
+app.get('/machines/:machine_id/filters', authMiddleware, async (req, res) => {
+  const { machine_id } = req.params;
+
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM filters
+       WHERE machine_id = $1
+         AND org_id = $2
+         AND record_state = 'ACTIVE'
+       ORDER BY due_date ASC`,
+      [machine_id, req.user.org_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error('Machine filters error:', err);
     res.status(500).json({ error: err.message });
   }
 });
