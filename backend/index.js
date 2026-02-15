@@ -11,6 +11,7 @@ if (JWT_SECRET === 'dev-secret-change-in-production') {
 
 const { db, initSchema } = require('./database');
 const PDFDocument = require('pdfkit');
+const ExcelJS = require('exceljs');
 const { isoToday, addMonths, calcStatus } = require('./utils');
 
 const app = express();
@@ -314,6 +315,57 @@ app.get('/reports/executive', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Report error:', err);
     res.status(500).json({ error: 'Report generation failed' });
+  }
+});
+
+// =====================
+// EXECUTIVE REPORT (EXCEL)
+// =====================
+app.get('/reports/executive.xlsx', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.user.org_id;
+
+    const result = await db.query(
+      `SELECT filter_id, area, equipment, location,
+              brand, model, due_date, status
+       FROM filters
+       WHERE org_id = $1 AND record_state = 'ACTIVE'
+       ORDER BY due_date ASC`,
+      [orgId]
+    );
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Reporte Ejecutivo');
+
+    sheet.columns = [
+      { header: 'Filter ID', key: 'filter_id', width: 20 },
+      { header: 'Área', key: 'area', width: 15 },
+      { header: 'Equipo', key: 'equipment', width: 20 },
+      { header: 'Ubicación', key: 'location', width: 20 },
+      { header: 'Marca', key: 'brand', width: 15 },
+      { header: 'Modelo', key: 'model', width: 15 },
+      { header: 'Vence', key: 'due_date', width: 15 },
+      { header: 'Estado', key: 'status', width: 15 }
+    ];
+
+    result.rows.forEach(row => sheet.addRow(row));
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=FilterTrack_${orgId}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err) {
+    console.error('Excel report error:', err);
+    res.status(500).json({ error: 'Excel report generation failed' });
   }
 });
 
