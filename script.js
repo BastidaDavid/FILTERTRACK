@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res || !res.ok) return
 
       const marcas = await res.json()
+      console.log('Marcas cargadas:', marcas);
       const selectMarca = document.getElementById('brand')
       if (!selectMarca) return
 
@@ -204,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res || !res.ok) return
 
       const maquinas = await res.json()
+      console.log('Máquinas cargadas:', maquinas);
 
       const lista = document.getElementById('lista-maquinas')
       if (!lista) return
@@ -317,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+
   // -----------------------------
   // BRAND CHANGE EVENT
   // -----------------------------
@@ -326,6 +329,56 @@ document.addEventListener('DOMContentLoaded', () => {
       const brandId = e.target.value
       if (brandId) {
         cargarModelos(brandId)
+      }
+    })
+  }
+
+  // -----------------------------
+  // MODEL CHANGE EVENT (Show Recommended Filter)
+  // -----------------------------
+  const selectModelo = document.getElementById('model')
+  if (selectModelo) {
+    selectModelo.addEventListener('change', async (e) => {
+      const modelId = e.target.value
+
+      const suggestionDiv = document.getElementById('filter-suggestion')
+      const filterNameDiv = document.getElementById('filter-name')
+      const lifeInput = document.getElementById('life-months')
+
+      if (!modelId) {
+        if (suggestionDiv) suggestionDiv.style.display = 'none'
+        if (filterNameDiv) filterNameDiv.textContent = ''
+        return
+      }
+
+      try {
+        const res = await secureFetch(`${MODELS_URL}/${modelId}/filters`)
+        if (!res || !res.ok) return
+
+        const filters = await res.json()
+
+        if (!filters.length) {
+          if (suggestionDiv) suggestionDiv.style.display = 'none'
+          return
+        }
+
+        // Take first recommended filter (MVP simple logic)
+        const recommended = filters[0]
+
+        if (filterNameDiv) {
+          filterNameDiv.textContent = `${recommended.filter_name} (${recommended.life_months} meses)`
+        }
+
+        if (lifeInput) {
+          lifeInput.value = recommended.life_months
+        }
+
+        if (suggestionDiv) {
+          suggestionDiv.style.display = 'block'
+        }
+
+      } catch (err) {
+        console.error('Error cargando filtro recomendado:', err)
       }
     })
   }
@@ -429,8 +482,12 @@ document.addEventListener('DOMContentLoaded', () => {
         equipment: document.getElementById('equipment').value.trim(),
         location: document.getElementById('location').value.trim(),
 
-        brand_id: parseInt(document.getElementById('brand').value),
-        model_id: parseInt(document.getElementById('model').value),
+        brand_id: document.getElementById('brand').value
+          ? parseInt(document.getElementById('brand').value)
+          : null,
+        model_id: document.getElementById('model').value
+          ? parseInt(document.getElementById('model').value)
+          : null,
 
         install_date: document.getElementById('install-date').value,
         life_months: Number(document.getElementById('life-months').value),
@@ -657,8 +714,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (localStorage.getItem('token')) {
-    cargarMaquinas()
-    cargarMarcas()
+    (async () => {
+      await cargarMarcas();
+      await cargarMaquinas();
+
+      if (maquinaSeleccionadaId) {
+        await cargarFiltros();
+      }
+    })();
   } else {
     window.location.href = 'login.html'
   }

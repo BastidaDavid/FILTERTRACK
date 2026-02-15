@@ -20,7 +20,7 @@
     <!-- SIDEBAR IZQUIERDA: MÁQUINAS -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h2 class="sidebar-title">Máquinas</h2>
+        <h2 class="sidebar-title">Máquinasssss</h2>
         <button type="button" id="btn-nueva-maquina" class="btn-primary">+ Nueva</button>
       </div>
 
@@ -52,20 +52,26 @@
       <div class="col-filtros">
 
         <form id="form-filtro">
-          <h2>Agregar máquina (V1)</h2>
+          <h2>Agregar máquina</h2>
 
           <input type="text" id="filter-id" name="filter_id" placeholder="Machine ID (ej. ICE-01)" required />
           <input type="text" id="area" name="area" placeholder="Área (ej. BAR)" required />
           <input type="text" id="equipment" name="equipment" placeholder="Equipo/Máquina (ej. ICE-01)" required />
           <input type="text" id="location" name="location" placeholder="Ubicación exacta" required />
 
-          <select id="brand-select" required>
+          <label for="brand" style="font-size:12px; opacity:0.7;">Marca</label>
+          <select id="brand" name="brand_id" required>
             <option value="">Selecciona Marca</option>
           </select>
 
-          <select id="model-select" required>
+          <label for="model" style="font-size:12px; opacity:0.7;">Modelo</label>
+          <select id="model" name="model_id" required>
             <option value="">Selecciona Modelo</option>
           </select>
+          <div id="filter-suggestion" class="filter-suggestion" style="display:none; margin:10px 0; padding:10px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid #334155;">
+            <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Filtro recomendado</div>
+            <div id="filter-name" style="font-weight:600; font-size:14px;"></div>
+          </div>
 
           <input type="date" id="install-date" name="install_date" required />
           <input type="number" id="life-months" name="life_months" placeholder="Vida útil (meses)" min="1" step="1" required />
@@ -98,7 +104,9 @@
               <th>Área</th>
               <th>Equipo</th>
               <th>Ubicación</th>
-              <th>Marca/Modelo</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>Filtro</th>
               <th>Instalación</th>
               <th>Vence</th>
               <th>Estado</th>
