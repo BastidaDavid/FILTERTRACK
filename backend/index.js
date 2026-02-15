@@ -10,6 +10,7 @@ if (JWT_SECRET === 'dev-secret-change-in-production') {
 }
 
 const { db, initSchema } = require('./database');
+const PDFDocument = require('pdfkit');
 const { isoToday, addMonths, calcStatus } = require('./utils');
 
 const app = express();
@@ -203,7 +204,118 @@ async function createFilter(body, res) {
 }
 
 // --- Health ---
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// =====================
+// EXECUTIVE REPORT (PDF)
+// =====================
+app.get('/reports/executive', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.user.org_id;
+    const { start, end } = req.query;
+
+    // Load filters for this organization
+    const filtersResult = await db.query(
+      `SELECT filter_id, area, equipment, location, brand, model,
+              install_date, life_months, due_date, status, responsible
+       FROM filters
+       WHERE org_id = $1 AND record_state = 'ACTIVE'
+       ORDER BY due_date ASC`,
+      [orgId]
+    );
+
+    const filters = filtersResult.rows;
+
+    // Load events (optional date filter)
+    let events = [];
+    if (start && end) {
+      const eventsResult = await db.query(
+        `SELECT e.*
+         FROM events e
+         JOIN filters f ON f.filter_id = e.filter_id
+         WHERE f.org_id = $1
+           AND e.event_date BETWEEN $2 AND $3
+         ORDER BY e.event_date DESC`,
+        [orgId, start, end]
+      );
+      events = eventsResult.rows;
+    } else {
+      const eventsResult = await db.query(
+        `SELECT e.*
+         FROM events e
+         JOIN filters f ON f.filter_id = e.filter_id
+         WHERE f.org_id = $1
+         ORDER BY e.event_date DESC
+         LIMIT 200`,
+        [orgId]
+      );
+      events = eventsResult.rows;
+    }
+
+    // Metrics
+    const total = filters.length;
+    const vencidos = filters.filter(f => (f.status || '').toUpperCase() === 'VENCIDO').length;
+    const proximos = filters.filter(f => (f.status || '').toUpperCase() === 'PROXIMO').length;
+    const activos = filters.filter(f => (f.status || '').toUpperCase() === 'ACTIVE').length;
+
+    // Generate PDF
+    const doc = new PDFDocument({ margin: 48 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="FilterTrack_Reporte_Ejecutivo_${orgId}.pdf"`
+    );
+
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(22).text('FILTERTRACK — REPORTE EJECUTIVO', { align: 'center' });
+    doc.moveDown(0.4);
+    doc.fontSize(12).text(`Organización: ${orgId}`, { align: 'center' });
+    doc.fontSize(10).text(`Generado: ${new Date().toISOString()}`, { align: 'center' });
+    doc.moveDown(1.2);
+
+    // Summary
+    doc.fontSize(14).text('Resumen', { underline: true });
+    doc.moveDown(0.4);
+    doc.fontSize(11).text(`Total filtros activos: ${total}`);
+    doc.text(`Activos: ${activos} | Próximos: ${proximos} | Vencidos: ${vencidos}`);
+    doc.text(`Eventos incluidos: ${events.length}`);
+    doc.moveDown(1);
+
+    // Filters (top 25)
+    doc.fontSize(14).text('Filtros (Top 25 por vencimiento)', { underline: true });
+    doc.moveDown(0.4);
+    doc.fontSize(10);
+
+    filters.slice(0, 25).forEach(f => {
+      doc.text(
+        `${f.filter_id} | ${f.area || '-'} | ${f.equipment || '-'} | vence: ${f.due_date || '-'} | estado: ${f.status || '-'}`
+      );
+    });
+
+    doc.moveDown(1);
+
+    // Events (top 30)
+    doc.fontSize(14).text('Eventos (Top 30)', { underline: true });
+    doc.moveDown(0.4);
+    doc.fontSize(10);
+
+    events.slice(0, 30).forEach(e => {
+      doc.text(
+        `${e.event_date || '-'} | ${e.filter_id} | ${e.event_type} | ${e.responsible || '-'}`
+      );
+    });
+
+    doc.end();
+
+  } catch (err) {
+    console.error('Report error:', err);
+    res.status(500).json({ error: 'Report generation failed' });
+  }
+});
 
 // =====================================================
 // FILTERS (V1) — software-only
