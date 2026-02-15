@@ -4,12 +4,17 @@ const { Pool } = require('pg');
 // Requires: DATABASE_URL in environment variables
 if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL is not defined in environment variables');
+  process.exit(1);
 }
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL
-    ? { rejectUnauthorized: false }
-    : false
+  ssl: {
+    rejectUnauthorized: false
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+  keepAlive: true
 });
 
 pool.on('connect', () => {
@@ -78,6 +83,32 @@ async function initSchema() {
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Machine Brands table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS machine_brands (
+        brand_id SERIAL PRIMARY KEY,
+        brand_name TEXT NOT NULL UNIQUE,
+        category TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed default brands (safe for re-run)
+    await pool.query(`
+      INSERT INTO machine_brands (brand_name, category)
+      VALUES
+        ('Scotsman', 'ICE'),
+        ('Hoshizaki', 'ICE'),
+        ('Manitowoc', 'ICE'),
+        ('Follett', 'ICE'),
+        ('Ice-O-Matic', 'ICE'),
+        ('Lancer', 'SODA'),
+        ('Multiplex', 'SODA'),
+        ('Bunn', 'COFFEE'),
+        ('Curtis', 'COFFEE')
+      ON CONFLICT (brand_name) DO NOTHING;
     `);
 
     // Indexes for multi-tenant performance
