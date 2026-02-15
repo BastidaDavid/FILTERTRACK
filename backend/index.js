@@ -51,60 +51,62 @@ function authMiddleware(req, res, next) {
 app.post('/auth/register', async (req, res) => {
   const { user_id, password, org_id } = req.body;
 
-  if (!user_id || !password || !org_id)
+  if (!user_id || !password || !org_id) {
     return res.status(400).json({ error: 'user_id, password and org_id required' });
+  }
 
-  const hash = await bcrypt.hash(password, 10);
-  const ts = new Date().toISOString();
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const ts = new Date().toISOString();
 
-  db.run(
-    'INSERT INTO users (user_id, org_id, password_hash, created_at) VALUES (?, ?, ?, ?)',
-    [user_id, org_id, hash, ts],
-    (err) => {
-      if (err) {
-        if (err.message && err.message.includes('UNIQUE')) {
-          return res.status(400).json({ error: 'User already exists' });
-        }
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ message: 'User created' });
+    await db.query(
+      'INSERT INTO users (user_id, org_id, password_hash, created_at) VALUES ($1, $2, $3, $4)',
+      [user_id, org_id, hash, ts]
+    );
+
+    res.json({ message: 'User created' });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'User already exists' });
     }
-  );
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-app.post('/auth/login', (req, res) => {
+app.post('/auth/login', async (req, res) => {
   const { user_id, password } = req.body;
 
   if (!user_id || !password) {
     return res.status(400).json({ error: 'user_id and password required' });
   }
 
-  db.get(
-    'SELECT * FROM users WHERE user_id = ?',
-    [user_id],
-    async (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+  try {
+    const result = await db.query(
+      'SELECT * FROM users WHERE user_id = $1',
+      [user_id]
+    );
 
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      const valid = await bcrypt.compare(password, user.password_hash);
-      if (!valid) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      const token = jwt.sign(
-        { user_id: user.user_id, org_id: user.org_id },
-        JWT_SECRET,
-        { expiresIn: '8h' }
-      );
-
-      res.json({ token });
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-  );
+
+    const user = result.rows[0];
+    const valid = await bcrypt.compare(password, user.password_hash);
+
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { user_id: user.user_id, org_id: user.org_id },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // --- Helpers ---
