@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // -----------------------------
   // AUTH TOKEN HELPER
   // -----------------------------
-  function getAuthHeaders(extra = {}) {
+  function getToken() {
     const token = localStorage.getItem('token')
 
     if (!token) {
@@ -23,19 +23,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return null
     }
 
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...extra
-    }
+    return token
   }
 
   // -----------------------------
   // SECURE FETCH (handles 401 auto logout)
   // -----------------------------
   async function secureFetch(url, options = {}) {
-    const headers = getAuthHeaders(options.headers || {})
-    if (!headers) return
+    const token = getToken()
+    if (!token) return
+
+    const headers = {
+      Authorization: `Bearer ${token}`
+    }
+
+    // Only attach JSON header if body exists
+    if (options.body) {
+      headers['Content-Type'] = 'application/json'
+    }
 
     const response = await fetch(url, {
       ...options,
@@ -227,15 +232,15 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     // Mostrar panel lateral
-    const panel = document.getElementById('seccion-mantenimientos')
+    const panel = document.querySelector('.col-mantenimientos')
     const overlay = document.getElementById('overlay')
 
     if (panel) {
-      panel.classList.add('panel-abierto')
+      panel.style.display = 'block'
     }
 
     if (overlay) {
-      overlay.classList.add('overlay-activo')
+      overlay.style.display = 'block'
     }
   }
 
@@ -272,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // -----------------------------
   // EXECUTIVE REPORT (PDF)
   // -----------------------------
-  const btnReporteFiltros = document.getElementById('btn-reporte-filtros')
+  const btnReporteFiltros = document.getElementById('btn-reporte-pdf')
 
   if (btnReporteFiltros) {
     btnReporteFiltros.addEventListener('click', async () => {
@@ -336,9 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('overlay')
 
   function cerrarPanel() {
-    const panel = document.getElementById('seccion-mantenimientos')
-    if (panel) panel.classList.remove('panel-abierto')
-    if (overlay) overlay.classList.remove('overlay-activo')
+    const panel = document.querySelector('.col-mantenimientos')
+    if (panel) panel.style.display = 'none'
+    if (overlay) overlay.style.display = 'none'
   }
 
   if (btnCerrarPanel) {
