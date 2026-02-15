@@ -154,19 +154,33 @@ document.addEventListener('DOMContentLoaded', () => {
       maquinas.forEach(m => {
         const item = document.createElement('div')
         item.className = 'maquina-item'
+        if (maquinaSeleccionadaId === m.machine_id) {
+          item.classList.add('activa');
+        }
         item.textContent = `${m.machine_id} - ${m.area || ''}`
 
         item.addEventListener('click', () => {
-          maquinaSeleccionadaId = m.machine_id
-          const titulo = document.getElementById('titulo-maquina')
+          maquinaSeleccionadaId = m.machine_id;
+
+          document.querySelectorAll('.maquina-item')
+            .forEach(el => el.classList.remove('activa'));
+
+          item.classList.add('activa');
+
+          const titulo = document.getElementById('titulo-maquina');
           if (titulo) {
-            titulo.textContent = `Máquina seleccionada: ${m.machine_id}`
+            titulo.textContent = `Máquina seleccionada: ${m.machine_id}`;
           }
-          cargarFiltros()
+
+          cargarFiltros();
         })
 
         lista.appendChild(item)
       })
+      if (!maquinaSeleccionadaId && maquinas.length > 0) {
+        maquinaSeleccionadaId = maquinas[0].machine_id;
+        cargarFiltros();
+      }
     } catch (err) {
       console.error('Error cargando máquinas:', err)
     }
