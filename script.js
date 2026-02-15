@@ -255,20 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lista.appendChild(item)
       })
-      if (!maquinaSeleccionadaId && maquinas.length > 0) {
-        maquinaSeleccionadaId = maquinas[0].machine_id;
-
-        const firstItem = lista.querySelector('.machine-item');
-        if (firstItem) firstItem.classList.add('activa');
-
-        const titulo = document.getElementById('titulo-maquina');
-        if (titulo) {
-          titulo.textContent = `Máquina seleccionada: ${maquinaSeleccionadaId}`;
-        }
-
-        cargarFiltros();
-        cargarDatosMaquina(maquinaSeleccionadaId);
-      }
     } catch (err) {
       console.error('Error cargando máquinas:', err)
     }
@@ -495,17 +481,26 @@ document.addEventListener('DOMContentLoaded', () => {
         notes: document.getElementById('notes').value.trim()
       }
 
+      let res;
+
       if (filtroEditandoId) {
-        await secureFetch(`${API_URL}/${filtroEditandoId}`, {
+        res = await secureFetch(`${API_URL}/${filtroEditandoId}`, {
           method: 'PUT',
           body: JSON.stringify(data)
-        })
-        filtroEditandoId = null
+        });
+        filtroEditandoId = null;
       } else {
-        await secureFetch(API_URL, {
+        res = await secureFetch(API_URL, {
           method: 'POST',
           body: JSON.stringify(data)
-        })
+        });
+      }
+
+      if (!res || !res.ok) {
+        const errorText = res ? await res.text() : 'No response from server';
+        console.error('Error guardando filtro:', errorText);
+        alert('Error al guardar el filtro. Revisa la consola.');
+        return;
       }
 
       formFiltro.reset()
