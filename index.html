@@ -56,11 +56,11 @@
       </div>
 
       <div class="reporte-actions">
-        <button type="button" id="btn-reporte-pdf" class="btn-reporte" title="Descargar reporte en PDF">
+        <button type="button" id="btn-reporte-pdf" class="btn-reporte">
           📄 PDF
         </button>
 
-        <button type="button" id="btn-reporte-excel" class="btn-reporte" title="Descargar reporte en Excel">
+        <button type="button" id="btn-reporte-excel" class="btn-reporte">
           📊 Excel
         </button>
       </div>
@@ -79,70 +79,33 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- JS inserta filas aquí -->
-        </tbody>
+        <tbody></tbody>
       </table>
     </div>
 
-    <div class="col-mantenimientos" style="display:none;">
+    <div class="col-mantenimientos">
       <button id="btn-cerrar-panel" style="float:right;">✕</button>
       <h2>Historial del filtro</h2>
-      <div class="reporte-actions">
-        <button type="button" id="btn-reporte-historial-pdf" class="btn-reporte" title="Descargar historial en PDF">
-          📄 Historial PDF
-        </button>
 
-        <button type="button" id="btn-reporte-historial-excel" class="btn-reporte" title="Descargar historial en Excel">
-          📊 Historial Excel
-        </button>
-      </div>
-
-      <div id="seccion-mantenimientos" style="display:none;">
-        <h3 id="titulo-mantenimientos"></h3>
-
-        <form id="form-mantenimiento">
-          <input type="date" id="mant-fecha" required />
-          <select id="mant-motivo" required>
-            <option value="">Motivo</option>
-            <option value="Programado">Programado</option>
-            <option value="Emergencia">Emergencia</option>
-            <option value="Calidad">Calidad</option>
-            <option value="Flujo bajo">Flujo bajo</option>
-            <option value="Daño">Daño</option>
-            <option value="Otro">Otro</option>
-          </select>
-          <input type="text" id="mant-responsable" placeholder="Responsable" required />
-          <input type="text" id="mant-observaciones" placeholder="Notas / Observaciones" />
-          <button type="submit">Guardar evento</button>
-        </form>
-
-        <table id="tabla-mantenimientos">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Motivo</th>
-              <th>Responsable</th>
-              <th>Notas</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- JS inserta mantenimientos aquí -->
-          </tbody>
-        </table>
-      </div>
+      <table id="tabla-mantenimientos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Motivo</th>
+            <th>Responsable</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    document.getElementById('btn-logout')?.addEventListener('click', () => {
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    });
-  </script>
-  <script src="script.js"></script>
+
+  
   <div id="overlay" class="overlay"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
