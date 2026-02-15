@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const API_BASE = 'https://filtertrack-backend.onrender.com'
   const API_URL = `${API_BASE}/filters`
 
+  const REPORTS_URL = `${API_BASE}/reports`
+
   // -----------------------------
   // AUTH TOKEN HELPER
   // -----------------------------
@@ -215,14 +217,26 @@ document.addEventListener('DOMContentLoaded', () => {
     events.forEach(ev => {
       const tr = document.createElement('tr')
       tr.innerHTML = `
-        <td>${ev.event_type}</td>
-        <td>${ev.event_date}</td>
-        <td>${ev.reason || '-'}</td>
+        <td>${ev.event_id || '-'}</td>
+        <td>${formatISO(ev.event_date)}</td>
+        <td>${ev.reason || ev.event_type || '-'}</td>
         <td>${ev.responsible || '-'}</td>
-        <td>${ev.notes || ''}</td>
+        <td>${ev.notes || '-'}</td>
       `
       tbody.appendChild(tr)
     })
+
+    // Mostrar panel lateral
+    const panel = document.getElementById('seccion-mantenimientos')
+    const overlay = document.getElementById('overlay')
+
+    if (panel) {
+      panel.classList.add('panel-abierto')
+    }
+
+    if (overlay) {
+      overlay.classList.add('overlay-activo')
+    }
   }
 
   // -----------------------------
@@ -253,6 +267,86 @@ document.addEventListener('DOMContentLoaded', () => {
       verHistorial(filtroActualId)
       cargarFiltros()
     })
+  }
+
+  // -----------------------------
+  // EXECUTIVE REPORT (PDF)
+  // -----------------------------
+  const btnReporteFiltros = document.getElementById('btn-reporte-filtros')
+
+  if (btnReporteFiltros) {
+    btnReporteFiltros.addEventListener('click', async () => {
+      try {
+        const res = await secureFetch(`${REPORTS_URL}/executive`)
+        if (!res || !res.ok) {
+          alert('Error generando reporte PDF')
+          return
+        }
+
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'FilterTrack_Reporte.pdf'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      } catch (err) {
+        console.error('Error reporte PDF:', err)
+        alert('No se pudo generar el reporte')
+      }
+    })
+  }
+
+  // -----------------------------
+  // EXECUTIVE REPORT (EXCEL)
+  // -----------------------------
+  const btnReporteExcel = document.getElementById('btn-reporte-excel')
+
+  if (btnReporteExcel) {
+    btnReporteExcel.addEventListener('click', async () => {
+      try {
+        const res = await secureFetch(`${REPORTS_URL}/executive.xlsx`)
+        if (!res || !res.ok) {
+          alert('Error generando reporte Excel')
+          return
+        }
+
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'FilterTrack_Reporte.xlsx'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      } catch (err) {
+        console.error('Error reporte Excel:', err)
+        alert('No se pudo generar el reporte')
+      }
+    })
+  }
+
+  // -----------------------------
+  // CERRAR PANEL HISTORIAL
+  // -----------------------------
+  const btnCerrarPanel = document.getElementById('btn-cerrar-panel')
+  const overlay = document.getElementById('overlay')
+
+  function cerrarPanel() {
+    const panel = document.getElementById('seccion-mantenimientos')
+    if (panel) panel.classList.remove('panel-abierto')
+    if (overlay) overlay.classList.remove('overlay-activo')
+  }
+
+  if (btnCerrarPanel) {
+    btnCerrarPanel.addEventListener('click', cerrarPanel)
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', cerrarPanel)
   }
 
   if (localStorage.getItem('token')) {

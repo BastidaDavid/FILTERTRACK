@@ -55,9 +55,15 @@
         </button>
       </div>
 
-      <button id="btn-reporte-filtros" class="btn-reporte" title="Generar reporte de filtros">
-        🖨️
-      </button>
+      <div class="reporte-actions">
+        <button id="btn-reporte-pdf" class="btn-reporte" title="Descargar reporte en PDF">
+          📄 PDF
+        </button>
+
+        <button id="btn-reporte-excel" class="btn-reporte" title="Descargar reporte en Excel">
+          📊 Excel
+        </button>
+      </div>
 
       <table id="tabla-filtros">
         <thead>
@@ -82,11 +88,17 @@
     <div class="col-mantenimientos">
       <button id="btn-cerrar-panel" style="float:right;">✕</button>
       <h2>Historial del filtro</h2>
-      <button id="btn-reporte-mantenimientos" class="btn-reporte" title="Generar reporte de historial">
-        🖨️
-      </button>
+      <div class="reporte-actions">
+        <button id="btn-reporte-historial-pdf" class="btn-reporte" title="Descargar historial en PDF">
+          📄 Historial PDF
+        </button>
 
-      <div id="seccion-mantenimientos" style="display:none;">
+        <button id="btn-reporte-historial-excel" class="btn-reporte" title="Descargar historial en Excel">
+          📊 Historial Excel
+        </button>
+      </div>
+
+      <div id="seccion-mantenimientos">
         <h3 id="titulo-mantenimientos"></h3>
 
         <form id="form-mantenimiento">

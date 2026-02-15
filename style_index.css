@@ -164,3 +164,66 @@ body {
 .col-mantenimientos {
   display: none;
 }
+
+/* ==============================
+   HISTORIAL PANEL LATERAL
+   ============================== */
+
+#seccion-mantenimientos {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 400px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  overflow-y: auto;
+  transition: right 0.3s ease;
+  z-index: 1001;
+}
+
+#seccion-mantenimientos.panel-abierto {
+  right: 0;
+}
+
+#seccion-mantenimientos h2,
+#seccion-mantenimientos h3 {
+  margin-top: 0;
+}
+
+#tabla-mantenimientos {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+#tabla-mantenimientos th {
+  background: #3b6bdc;
+  color: white;
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+#tabla-mantenimientos td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+/* Overlay oscuro */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+}
+
+.overlay.overlay-activo {
+  opacity: 1;
+  pointer-events: all;
+}
