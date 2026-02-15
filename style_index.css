@@ -1,0 +1,166 @@
+/* ==============================
+   FILTERTRACK DASHBOARD STYLE
+   Clean Light Professional Version
+   ============================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f1f3f6;
+  color: #222;
+}
+
+/* Layout */
+.layout {
+  padding: 40px 60px;
+}
+
+/* Title */
+.app-title {
+  text-align: center;
+  font-size: 42px;
+  letter-spacing: 8px;
+  margin-bottom: 40px;
+  color: #3b6bdc;
+  font-weight: 700;
+  position: relative;
+}
+
+.app-title::after {
+  content: "";
+  display: block;
+  width: 140px;
+  height: 4px;
+  background: #3b6bdc;
+  margin: 15px auto 0 auto;
+  border-radius: 4px;
+}
+
+/* Form container */
+#form-filtro {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  margin-bottom: 30px;
+}
+
+#form-filtro h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+#form-filtro input {
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin: 6px;
+  font-size: 14px;
+}
+
+#form-filtro button {
+  padding: 10px 16px;
+  border-radius: 4px;
+  border: none;
+  background: #3b6bdc;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  margin: 6px;
+}
+
+#form-filtro button:hover {
+  background: #2f56b4;
+}
+
+/* Estado buttons */
+.estado-bar {
+  margin: 20px 0;
+}
+
+.estado-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  background: #e9ecef;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.estado-btn.activo {
+  background: #3b6bdc;
+  color: white;
+  border: none;
+}
+
+/* Table */
+#tabla-filtros {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+}
+
+#tabla-filtros th {
+  background: #3b6bdc;
+  color: white;
+  padding: 14px;
+  text-align: left;
+  font-weight: 600;
+}
+
+#tabla-filtros td {
+  padding: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+#tabla-filtros tbody tr:hover {
+  background: #f5f7ff;
+}
+
+/* Status badge */
+.estado-ok {
+  background: #d4edda;
+  color: #155724;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  display: inline-block;
+}
+
+/* Action buttons */
+#tabla-filtros button {
+  padding: 6px 10px;
+  margin-right: 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+#tabla-filtros button:hover {
+  background: #e2e6ea;
+}
+
+/* Logout button */
+#btn-logout {
+  float: right;
+  background: #f8f9fa;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#btn-logout:hover {
+  background: #e2e6ea;
+}
+
+/* Hide maintenance column by default */
+.col-mantenimientos {
+  display: none;
+}
