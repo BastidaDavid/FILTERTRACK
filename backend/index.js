@@ -955,6 +955,42 @@ app.get('/machines/:machine_id/filters', authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ==============================
+// DELETE MACHINE (Enterprise)
+// ==============================
+app.delete('/machines/:machine_id', authMiddleware, async (req, res) => {
+  try {
+    const { machine_id } = req.params;
+
+    // First delete related filters to avoid FK constraint issues
+    await db.query(
+      `DELETE FROM filters
+       WHERE machine_id = $1
+         AND org_id = $2`,
+      [machine_id, req.user.org_id]
+    );
+
+    // Then delete the machine
+    const result = await db.query(
+      `DELETE FROM machines
+       WHERE machine_id = $1
+         AND org_id = $2
+       RETURNING *`,
+      [machine_id, req.user.org_id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Machine not found' });
+    }
+
+    res.json({ message: 'Machine deleted successfully', machine_id });
+
+  } catch (err) {
+    console.error('Delete machine error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // =====================================================
 // ALIASES (backward compatible Spanish endpoints)
 // =====================================================
