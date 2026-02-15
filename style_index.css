@@ -210,44 +210,45 @@ body {
 }
 
 #tabla-filtros button {
-  padding: 5px 8px;
-  margin: 2px 2px;
-  border-radius: 6px;
-  border: 1px solid #d0d7e2;
-  background: white;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0 4px;
+  border-radius: 8px;
+  border: 1px solid #e0e4ec;
+  background: #ffffff;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-width: 28px;
-  height: 28px;
   transition: all 0.2s ease;
 }
 
 /* Compact icon-style action buttons */
 .btn-accion {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  font-size: 14px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e0e4ec;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: all 0.2s ease;
 }
 
 .btn-accion.editar {
   color: #3b6bdc;
-  border-color: #3b6bdc;
 }
 
 .btn-accion.archivar {
-  color: #856404;
-  border-color: #ffeeba;
+  color: #c82333;
 }
 
 .btn-accion.historial {
-  color: #155724;
-  border-color: #c3e6cb;
+  color: #17a2b8;
 }
 
 .btn-accion:hover {
@@ -298,7 +299,8 @@ body {
 
 #tabla-filtros button:hover {
   background: #f1f4ff;
-  border-color: #3b6bdc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
 /* Logout button */
@@ -381,4 +383,11 @@ body {
 .overlay.overlay-activo {
   opacity: 1;
   pointer-events: all;
+}
+
+/* Align action column */
+#tabla-filtros td:last-child {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
