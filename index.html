@@ -16,95 +16,117 @@
   </script>
 
   <div class="layout">
-    <div class="col-filtros">
-      <h1 class="app-title">FILTERTRACK</h1>
-      <button id="btn-logout" style="float:right;">Cerrar sesión</button>
 
-      <form id="form-filtro">
-        <h2>Agregar máquina (V1)</h2>
-
-        <input type="text" id="filter-id" name="filter_id" placeholder="Filter ID (ej. FT-BAR-ICE-001)" required />
-        <input type="text" id="area" name="area" placeholder="Área (ej. BAR)" required />
-        <input type="text" id="equipment" name="equipment" placeholder="Equipo/Máquina (ej. ICE-01)" required />
-        <input type="text" id="location" name="location" placeholder="Ubicación exacta" required />
-
-        <input type="text" id="brand" name="brand" placeholder="Marca" required />
-        <input type="text" id="model" name="model" placeholder="Modelo" required />
-
-        <input type="date" id="install-date" name="install_date" required />
-        <input type="number" id="life-months" name="life_months" placeholder="Vida útil (meses)" min="1" step="1" required />
-
-        <input type="text" id="responsible" name="responsible" placeholder="Responsable (iniciales o nombre)" required />
-        <input type="text" id="notes" name="notes" placeholder="Notas (opcional)" />
-
-        <button type="submit">Guardar máquina</button>
-        <button type="button" id="btn-limpiar">Limpiar campos</button>
-      </form>
-
-      <div class="estado-bar">
-        <button class="estado-btn activo" data-estado="all">
-          Todos (<span id="count-all">0</span>)
-        </button>
-
-        <button class="estado-btn" data-estado="proximo">
-          Próximos (<span id="count-proximo">0</span>)
-        </button>
-
-        <button class="estado-btn" data-estado="vencido">
-          Vencidos (<span id="count-vencido">0</span>)
-        </button>
+    <!-- SIDEBAR IZQUIERDA: MÁQUINAS -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Máquinas</h2>
+        <button type="button" id="btn-nueva-maquina" class="btn-primary">+ Nueva</button>
       </div>
 
-      <div class="reporte-actions">
-        <button type="button" id="btn-reporte-pdf" class="btn-reporte">
-          📄 PDF
-        </button>
+      <ul id="lista-maquinas" class="lista-maquinas">
+        <!-- JS inserta máquinas aquí -->
+      </ul>
 
-        <button type="button" id="btn-reporte-excel" class="btn-reporte">
-          📊 Excel
-        </button>
+      <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+
+      <div class="header-bar">
+        <div>
+          <h1 class="app-title" style="margin:0;">FILTERTRACK</h1>
+          <div id="titulo-maquina" class="sub-title">Selecciona una máquina</div>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" id="btn-reporte-pdf" class="btn-reporte">📄 PDF</button>
+          <button type="button" id="btn-reporte-excel" class="btn-reporte">📊 Excel</button>
+        </div>
       </div>
 
-      <table id="tabla-filtros">
-        <thead>
-          <tr>
-            <th>Machine ID</th>
-            <th>Área</th>
-            <th>Equipo</th>
-            <th>Ubicación</th>
-            <th>Marca/Modelo</th>
-            <th>Instalación</th>
-            <th>Vence</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+      <!-- COLUMNA / PANEL PRINCIPAL (lo que ya tenías) -->
+      <div class="col-filtros">
 
-    <div class="col-mantenimientos">
-      <button id="btn-cerrar-panel" style="float:right;">✕</button>
-      <h2>Historial de la máquina</h2>
+        <form id="form-filtro">
+          <h2>Agregar máquina (V1)</h2>
 
-      <table id="tabla-mantenimientos">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Fecha</th>
-            <th>Motivo</th>
-            <th>Responsable</th>
-            <th>Notas</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+          <input type="text" id="filter-id" name="filter_id" placeholder="Machine ID (ej. ICE-01)" required />
+          <input type="text" id="area" name="area" placeholder="Área (ej. BAR)" required />
+          <input type="text" id="equipment" name="equipment" placeholder="Equipo/Máquina (ej. ICE-01)" required />
+          <input type="text" id="location" name="location" placeholder="Ubicación exacta" required />
+
+          <input type="text" id="brand" name="brand" placeholder="Marca" required />
+          <input type="text" id="model" name="model" placeholder="Modelo" required />
+
+          <input type="date" id="install-date" name="install_date" required />
+          <input type="number" id="life-months" name="life_months" placeholder="Vida útil (meses)" min="1" step="1" required />
+
+          <input type="text" id="responsible" name="responsible" placeholder="Responsable (iniciales o nombre)" required />
+          <input type="text" id="notes" name="notes" placeholder="Notas (opcional)" />
+
+          <button type="submit">Guardar máquina</button>
+          <button type="button" id="btn-limpiar">Limpiar campos</button>
+        </form>
+
+        <div class="estado-bar">
+          <button class="estado-btn activo" data-estado="all">
+            Todos (<span id="count-all">0</span>)
+          </button>
+
+          <button class="estado-btn" data-estado="proximo">
+            Próximos (<span id="count-proximo">0</span>)
+          </button>
+
+          <button class="estado-btn" data-estado="vencido">
+            Vencidos (<span id="count-vencido">0</span>)
+          </button>
+        </div>
+
+        <table id="tabla-filtros">
+          <thead>
+            <tr>
+              <th>Machine ID</th>
+              <th>Área</th>
+              <th>Equipo</th>
+              <th>Ubicación</th>
+              <th>Marca/Modelo</th>
+              <th>Instalación</th>
+              <th>Vence</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- PANEL LATERAL DERECHO: HISTORIAL -->
+      <div class="col-mantenimientos">
+        <button id="btn-cerrar-panel" type="button" style="float:right;">✕</button>
+        <h2>Historial de la máquina</h2>
+
+        <table id="tabla-mantenimientos">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Motivo</th>
+              <th>Responsable</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </main>
   </div>
 
-
-  
-  <div id="overlay" class="overlay"></div>
+<div id="overlay" class="overlay"></div>
 
   <script src="script.js"></script>
 </body>

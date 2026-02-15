@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const REPORTS_URL = `${API_BASE}/reports`
 
+  const MACHINES_URL = `${API_BASE}/machines`
+
+  let maquinaSeleccionadaId = null
+
   // -----------------------------
   // AUTH TOKEN HELPER
   // -----------------------------
@@ -88,7 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // -----------------------------
   async function cargarFiltros() {
     try {
-      const res = await secureFetch(API_URL)
+      const url = maquinaSeleccionadaId
+        ? `${API_URL}?machine_id=${maquinaSeleccionadaId}`
+        : API_URL
+
+      const res = await secureFetch(url)
       if (!res || !res.ok) throw new Error('Error loading filters')
       const filtros = await res.json()
 
@@ -126,6 +134,64 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error cargando filtros:', err)
       alert('No se pudo conectar con el servidor.')
     }
+  }
+
+  // -----------------------------
+  // LOAD MACHINES (SIDEBAR)
+  // -----------------------------
+  async function cargarMaquinas() {
+    try {
+      const res = await secureFetch(MACHINES_URL)
+      if (!res || !res.ok) return
+
+      const maquinas = await res.json()
+
+      const lista = document.getElementById('lista-maquinas')
+      if (!lista) return
+
+      lista.innerHTML = ''
+
+      maquinas.forEach(m => {
+        const item = document.createElement('div')
+        item.className = 'maquina-item'
+        item.textContent = `${m.machine_id} - ${m.area || ''}`
+
+        item.addEventListener('click', () => {
+          maquinaSeleccionadaId = m.machine_id
+          const titulo = document.getElementById('titulo-maquina')
+          if (titulo) {
+            titulo.textContent = `Máquina seleccionada: ${m.machine_id}`
+          }
+          cargarFiltros()
+        })
+
+        lista.appendChild(item)
+      })
+    } catch (err) {
+      console.error('Error cargando máquinas:', err)
+    }
+  }
+
+  // -----------------------------
+  // NUEVA MAQUINA
+  // -----------------------------
+  const btnNuevaMaquina = document.getElementById('btn-nueva-maquina')
+
+  if (btnNuevaMaquina) {
+    btnNuevaMaquina.addEventListener('click', async () => {
+      const machineId = prompt('ID de la nueva máquina:')
+      if (!machineId) return
+
+      await secureFetch(MACHINES_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          machine_id: machineId,
+          area: 'General'
+        })
+      })
+
+      cargarMaquinas()
+    })
   }
 
   // -----------------------------
@@ -367,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (localStorage.getItem('token')) {
+    cargarMaquinas()
     cargarFiltros()
   } else {
     window.location.href = 'login.html'

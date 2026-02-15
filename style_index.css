@@ -16,7 +16,65 @@ body {
 
 /* Layout */
 .layout {
+  margin-left: 260px;
   padding: 40px 60px;
+}
+
+
+/* ==============================
+   LEFT SIDEBAR (Machines)
+   ============================== */
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 260px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: 5px 0 25px rgba(0, 0, 0, 0.05);
+  padding: 30px 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.sidebar h3 {
+  margin-top: 0;
+  font-size: 18px;
+  color: #3b6bdc;
+  margin-bottom: 15px;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: #3b6bdc;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.sidebar button:hover {
+  background: #2f56b4;
+}
+
+.machine-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.machine-item:hover {
+  background: #f1f3f6;
+}
+
+.machine-item.activa {
+  background: #3b6bdc;
+  color: white;
 }
 
 /* Title */
