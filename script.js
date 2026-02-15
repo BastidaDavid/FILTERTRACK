@@ -12,8 +12,57 @@ document.addEventListener('DOMContentLoaded', () => {
   const REPORTS_URL = `${API_BASE}/reports`
 
   const MACHINES_URL = `${API_BASE}/machines`
+  const BRANDS_URL = `${API_BASE}/machine-brands`
+  const MODELS_URL = `${API_BASE}/machine-models`
 
   let maquinaSeleccionadaId = null
+
+  // -----------------------------
+  // LOAD BRANDS & MODELS (Enterprise)
+  // -----------------------------
+  async function cargarMarcas() {
+    try {
+      const res = await secureFetch(BRANDS_URL)
+      if (!res || !res.ok) return
+
+      const marcas = await res.json()
+      const selectMarca = document.getElementById('brand')
+      if (!selectMarca) return
+
+      selectMarca.innerHTML = '<option value="">Selecciona marca</option>'
+
+      marcas.forEach(m => {
+        const option = document.createElement('option')
+        option.value = m.id
+        option.textContent = m.name
+        selectMarca.appendChild(option)
+      })
+    } catch (err) {
+      console.error('Error cargando marcas:', err)
+    }
+  }
+
+  async function cargarModelos(brandId) {
+    try {
+      const res = await secureFetch(`${MODELS_URL}?brand_id=${brandId}`)
+      if (!res || !res.ok) return
+
+      const modelos = await res.json()
+      const selectModelo = document.getElementById('model')
+      if (!selectModelo) return
+
+      selectModelo.innerHTML = '<option value="">Selecciona modelo</option>'
+
+      modelos.forEach(m => {
+        const option = document.createElement('option')
+        option.value = m.id
+        option.textContent = m.model_name
+        selectModelo.appendChild(option)
+      })
+    } catch (err) {
+      console.error('Error cargando modelos:', err)
+    }
+  }
 
   // -----------------------------
   // AUTH TOKEN HELPER
@@ -93,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function cargarFiltros() {
     try {
       const url = maquinaSeleccionadaId
-        ? `${API_URL}?machine_id=${maquinaSeleccionadaId}`
+        ? `${MACHINES_URL}/${maquinaSeleccionadaId}/filters`
         : API_URL
 
       const res = await secureFetch(url)
@@ -163,16 +212,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       maquinas.forEach(m => {
         const item = document.createElement('div')
-        item.className = 'maquina-item'
+        item.className = 'machine-item'
         if (maquinaSeleccionadaId === m.machine_id) {
           item.classList.add('activa');
         }
-        item.textContent = `${m.machine_id} - ${m.area || ''}`
+        item.innerHTML = `
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span>${m.machine_id} - ${m.area || ''}</span>
+    <div style="display:flex; gap:6px;">
+      <button 
+        onclick="event.stopPropagation(); editarMaquina('${m.machine_id}')"
+        style="background:none;border:none;cursor:pointer;font-size:14px;">
+        ✏️
+      </button>
+      <button 
+        onclick="event.stopPropagation(); eliminarMaquina('${m.machine_id}')"
+        style="background:none;border:none;cursor:pointer;font-size:14px;color:#dc3545;">
+        🗑
+      </button>
+    </div>
+  </div>
+`;
 
         item.addEventListener('click', () => {
           maquinaSeleccionadaId = m.machine_id;
 
-          document.querySelectorAll('.maquina-item')
+          document.querySelectorAll('.machine-item')
             .forEach(el => el.classList.remove('activa'));
 
           item.classList.add('activa');
@@ -183,17 +248,86 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           cargarFiltros();
+          cargarDatosMaquina(m.machine_id);
         })
 
         lista.appendChild(item)
       })
       if (!maquinaSeleccionadaId && maquinas.length > 0) {
         maquinaSeleccionadaId = maquinas[0].machine_id;
+
+        const firstItem = lista.querySelector('.machine-item');
+        if (firstItem) firstItem.classList.add('activa');
+
+        const titulo = document.getElementById('titulo-maquina');
+        if (titulo) {
+          titulo.textContent = `Máquina seleccionada: ${maquinaSeleccionadaId}`;
+        }
+
         cargarFiltros();
+        cargarDatosMaquina(maquinaSeleccionadaId);
       }
     } catch (err) {
       console.error('Error cargando máquinas:', err)
     }
+  }
+
+  // -----------------------------
+  // LOAD MACHINE DATA (Auto-fill form)
+  // -----------------------------
+  async function cargarDatosMaquina(machineId) {
+    try {
+      const res = await secureFetch(`${MACHINES_URL}/${machineId}`);
+      if (!res || !res.ok) return;
+
+      const machine = await res.json();
+
+      const titulo = document.getElementById('titulo-maquina');
+      if (titulo) {
+        titulo.textContent = `${machine.machine_id} - ${machine.area || ''}`;
+      }
+
+      // Autocomplete base info
+      const equipment = document.getElementById('equipment');
+      const area = document.getElementById('area');
+      const location = document.getElementById('location');
+
+      if (equipment) equipment.value = machine.machine_id || '';
+      if (area) area.value = machine.area || '';
+      if (location) location.value = machine.location || '';
+
+      // Load brand + model if exist
+      if (machine.brand_id) {
+        const selectMarca = document.getElementById('brand');
+        if (selectMarca) {
+          selectMarca.value = machine.brand_id;
+          await cargarModelos(machine.brand_id);
+        }
+      }
+
+      if (machine.model_id) {
+        const selectModelo = document.getElementById('model');
+        if (selectModelo) {
+          selectModelo.value = machine.model_id;
+        }
+      }
+
+    } catch (err) {
+      console.error('Error loading machine data:', err);
+    }
+  }
+
+  // -----------------------------
+  // BRAND CHANGE EVENT
+  // -----------------------------
+  const selectMarca = document.getElementById('brand')
+  if (selectMarca) {
+    selectMarca.addEventListener('change', (e) => {
+      const brandId = e.target.value
+      if (brandId) {
+        cargarModelos(brandId)
+      }
+    })
   }
 
   // -----------------------------
@@ -219,6 +353,63 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -----------------------------
+  // EDITAR MAQUINA (Enterprise)
+  // -----------------------------
+  window.editarMaquina = async function(machineId) {
+    try {
+      const res = await secureFetch(`${MACHINES_URL}/${machineId}`);
+      if (!res || !res.ok) return;
+
+      const machine = await res.json();
+
+      const nuevaArea = prompt('Editar área:', machine.area || '');
+      if (nuevaArea === null) return;
+
+      const nuevaUbicacion = prompt('Editar ubicación:', machine.location || '');
+      if (nuevaUbicacion === null) return;
+
+      await secureFetch(`${MACHINES_URL}/${machineId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          area: nuevaArea,
+          location: nuevaUbicacion
+        })
+      });
+
+      alert('Máquina actualizada correctamente');
+      cargarMaquinas();
+
+    } catch (err) {
+      console.error('Error editando máquina:', err);
+    }
+  };
+
+  // -----------------------------
+  // ELIMINAR MAQUINA (Enterprise)
+  // -----------------------------
+  window.eliminarMaquina = async function(machineId) {
+    try {
+      const confirmacion = confirm('¿Eliminar máquina? Esta acción no se puede deshacer.');
+      if (!confirmacion) return;
+
+      await secureFetch(`${MACHINES_URL}/${machineId}`, {
+        method: 'DELETE'
+      });
+
+      if (maquinaSeleccionadaId === machineId) {
+        maquinaSeleccionadaId = null;
+      }
+
+      alert('Máquina eliminada correctamente');
+      cargarMaquinas();
+      cargarFiltros();
+
+    } catch (err) {
+      console.error('Error eliminando máquina:', err);
+    }
+  };
+
+  // -----------------------------
   // CREATE / UPDATE FILTER
   // -----------------------------
   const formFiltro = document.getElementById('form-filtro')
@@ -237,8 +428,10 @@ document.addEventListener('DOMContentLoaded', () => {
         area: document.getElementById('area').value.trim(),
         equipment: document.getElementById('equipment').value.trim(),
         location: document.getElementById('location').value.trim(),
-        brand: document.getElementById('brand').value.trim(),
-        model: document.getElementById('model').value.trim(),
+
+        brand_id: parseInt(document.getElementById('brand').value),
+        model_id: parseInt(document.getElementById('model').value),
+
         install_date: document.getElementById('install-date').value,
         life_months: Number(document.getElementById('life-months').value),
         responsible: document.getElementById('responsible').value.trim(),
@@ -277,8 +470,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('area').value = f.area
     document.getElementById('equipment').value = f.equipment
     document.getElementById('location').value = f.location
-    document.getElementById('brand').value = f.brand
-    document.getElementById('model').value = f.model
+    document.getElementById('brand').value = f.brand_id
+    await cargarModelos(f.brand_id)
+    document.getElementById('model').value = f.model_id
     document.getElementById('install-date').value = formatISO(f.install_date)
     document.getElementById('life-months').value = f.life_months
     document.getElementById('responsible').value = f.responsible
@@ -464,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (localStorage.getItem('token')) {
     cargarMaquinas()
+    cargarMarcas()
   } else {
     window.location.href = 'login.html'
   }
