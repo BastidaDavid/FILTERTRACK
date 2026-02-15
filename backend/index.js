@@ -111,29 +111,6 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
-// =====================
-// DEBUG - RESET PASSWORD (TEMPORAL)
-// =====================
-app.post('/debug/reset-password', async (req, res) => {
-  const { user_id, new_password } = req.body;
-
-  if (!user_id || !new_password) {
-    return res.status(400).json({ error: 'user_id and new_password required' });
-  }
-
-  try {
-    const hash = await bcrypt.hash(new_password, 10);
-
-    await db.query(
-      'UPDATE users SET password_hash = $1 WHERE user_id = $2',
-      [hash, user_id]
-    );
-
-    res.json({ message: 'Password reset successful' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // --- Helpers ---
 function nowIso() {
@@ -1144,47 +1121,7 @@ app.post('/seed/brands', async (req, res) => {
   }
 });
 
-// ==============================
-// DEBUG - CREATE MODEL_FILTERS TABLE (TEMPORAL)
-// ==============================
-app.get('/debug/create-model-filters', async (_req, res) => {
-  try {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS model_filters (
-        id SERIAL PRIMARY KEY,
-        model_id INTEGER NOT NULL REFERENCES machine_models(id) ON DELETE CASCADE,
-        filter_name VARCHAR(100) NOT NULL,
-        life_months INTEGER NOT NULL,
-        notes TEXT
-      );
-    `);
 
-    res.json({ message: 'model_filters table created successfully' });
-  } catch (err) {
-    console.error('Create model_filters error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ==============================
-// DEBUG - SEED MODEL FILTERS (TEMPORAL)
-// ==============================
-app.get('/debug/seed-model-filters', async (_req, res) => {
-  try {
-    await db.query(`
-      INSERT INTO model_filters (model_id, filter_name, life_months)
-      VALUES 
-        (1, 'Everpure 4FC', 6),
-        (2, 'Everpure 7FC', 12)
-      ON CONFLICT DO NOTHING;
-    `);
-
-    res.json({ message: 'Model filters seeded successfully' });
-  } catch (err) {
-    console.error('Seed model_filters error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // --- Server ---
 const PORT = Number(process.env.PORT || 3000);
