@@ -160,16 +160,14 @@ body {
   background: #e2e6ea;
 }
 
-/* Hide maintenance column by default */
-.col-mantenimientos {
-  display: none;
-}
+
 
 /* ==============================
    HISTORIAL PANEL LATERAL
    ============================== */
 
-#seccion-mantenimientos {
+/* Panel lateral principal */
+.col-mantenimientos {
   position: fixed;
   top: 0;
   right: -420px;
@@ -183,14 +181,11 @@ body {
   z-index: 1001;
 }
 
-#seccion-mantenimientos.panel-abierto {
+.col-mantenimientos.activo {
   right: 0;
 }
 
-#seccion-mantenimientos h2,
-#seccion-mantenimientos h3 {
-  margin-top: 0;
-}
+
 
 #tabla-mantenimientos {
   width: 100%;

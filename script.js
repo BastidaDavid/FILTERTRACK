@@ -236,11 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('overlay')
 
     if (panel) {
-      panel.style.display = 'block'
+      panel.classList.add('activo')
     }
 
     if (overlay) {
-      overlay.style.display = 'block'
+      overlay.classList.add('overlay-activo')
     }
   }
 
@@ -342,8 +342,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function cerrarPanel() {
     const panel = document.querySelector('.col-mantenimientos')
-    if (panel) panel.style.display = 'none'
-    if (overlay) overlay.style.display = 'none'
+    if (panel) panel.classList.remove('activo')
+    if (overlay) overlay.classList.remove('overlay-activo')
   }
 
   if (btnCerrarPanel) {
