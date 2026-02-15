@@ -183,7 +183,7 @@ body {
 /* Table */
 #tabla-filtros {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
   border-collapse: collapse;
   background: white;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
@@ -201,7 +201,7 @@ body {
 }
 
 #tabla-filtros td {
-  padding: 14px;
+  padding: 12px 14px;
   border-bottom: 1px solid #eee;
 }
 
@@ -269,7 +269,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-width: 100px;
+  min-width: 86px;
   text-align: center;
 }
 
@@ -385,9 +385,22 @@ body {
   pointer-events: all;
 }
 
-/* Align action column */
+/* Acciones: ancho fijo para que no se corten los iconos */
+#tabla-filtros th:last-child,
 #tabla-filtros td:last-child {
+  width: 140px;
+}
+
+/* Contenedor de acciones dentro de la celda */
+.acciones {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  justify-content: flex-end;
   align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* Celda acciones: menos padding a la derecha para que quepa todo */
+.acciones-cell {
+  padding-right: 18px;
 }

@@ -122,10 +122,20 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="dias-restantes">${estado.dias} días</div>
             </span>
           </td>
-          <td>
-            <button onclick="editarFiltro('${f.filter_id}')">Editar</button>
-            <button onclick="eliminarFiltro('${f.filter_id}')">Archivar</button>
-            <button onclick="verHistorial('${f.filter_id}')">Historial</button>
+          <td class="acciones-cell">
+            <div class="acciones-top">
+              <button class="btn-accion editar" onclick="editarFiltro('${f.filter_id}')" title="Editar">
+                ✏️
+              </button>
+              <button class="btn-accion historial" onclick="verHistorial('${f.filter_id}')" title="Historial">
+                🕘
+              </button>
+            </div>
+            <div class="acciones-bottom">
+              <button class="btn-accion archivar btn-danger" onclick="eliminarFiltro('${f.filter_id}')" title="Archivar">
+                🗑
+              </button>
+            </div>
           </td>
         `
         tbody.appendChild(tr)
