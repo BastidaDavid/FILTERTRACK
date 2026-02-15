@@ -122,14 +122,33 @@ body {
   background: #f5f7ff;
 }
 
-/* Status badge */
-.estado-ok {
-  background: #d4edda;
-  color: #155724;
+/* ==============================
+   STATUS BADGES (Machine State)
+   ============================== */
+
+.badge {
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 13px;
+  font-weight: 600;
   display: inline-block;
+  text-align: center;
+  min-width: 90px;
+}
+
+.estado-verde {
+  background: #d4edda;
+  color: #155724;
+}
+
+.estado-naranja {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.estado-rojo {
+  background: #f8d7da;
+  color: #721c24;
 }
 
 /* Action buttons */

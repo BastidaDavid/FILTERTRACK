@@ -354,6 +354,18 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.addEventListener('click', cerrarPanel)
   }
 
+  // -----------------------------
+  // LOGOUT
+  // -----------------------------
+  const btnLogout = document.getElementById('btn-logout')
+
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      localStorage.removeItem('token')
+      window.location.href = 'login.html'
+    })
+  }
+
   if (localStorage.getItem('token')) {
     cargarFiltros()
   } else {

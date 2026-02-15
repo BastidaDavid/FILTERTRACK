@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <base href="./">
-  <title>Dashboard – Sistema de Filtros</title>
+  <title>Dashboard – Bitácora de Máquinas</title>
   <link rel="stylesheet" href="style_index.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
       <button id="btn-logout" style="float:right;">Cerrar sesión</button>
 
       <form id="form-filtro">
-        <h2>Agregar filtro (V1)</h2>
+        <h2>Agregar máquina (V1)</h2>
 
         <input type="text" id="filter-id" name="filter_id" placeholder="Filter ID (ej. FT-BAR-ICE-001)" required />
         <input type="text" id="area" name="area" placeholder="Área (ej. BAR)" required />
@@ -37,7 +37,7 @@
         <input type="text" id="responsible" name="responsible" placeholder="Responsable (iniciales o nombre)" required />
         <input type="text" id="notes" name="notes" placeholder="Notas (opcional)" />
 
-        <button type="submit">Guardar filtro</button>
+        <button type="submit">Guardar máquina</button>
         <button type="button" id="btn-limpiar">Limpiar campos</button>
       </form>
 
@@ -68,7 +68,7 @@
       <table id="tabla-filtros">
         <thead>
           <tr>
-            <th>Filter ID</th>
+            <th>Machine ID</th>
             <th>Área</th>
             <th>Equipo</th>
             <th>Ubicación</th>
@@ -85,7 +85,7 @@
 
     <div class="col-mantenimientos">
       <button id="btn-cerrar-panel" style="float:right;">✕</button>
-      <h2>Historial del filtro</h2>
+      <h2>Historial de la máquina</h2>
 
       <table id="tabla-mantenimientos">
         <thead>

@@ -740,6 +740,90 @@ app.post('/filters/:filter_id/events', authMiddleware, async (req, res) => {
   }
 });
 
+// ==============================
+// MACHINES (V1) — Professional structure
+// ==============================
+
+// Create machine
+app.post('/machines', authMiddleware, async (req, res) => {
+  const { machine_id, area, location, brand, model, serial_number } = req.body;
+
+  if (!machine_id) {
+    return res.status(400).json({ error: 'machine_id is required' });
+  }
+
+  try {
+    const ts = nowIso();
+
+    await db.query(
+      `INSERT INTO machines
+       (machine_id, org_id, area, location, brand, model, serial_number, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [
+        machine_id,
+        req.user.org_id,
+        area || null,
+        location || null,
+        brand || null,
+        model || null,
+        serial_number || null,
+        ts
+      ]
+    );
+
+    res.json({ message: 'Machine created', machine_id });
+
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Machine already exists' });
+    }
+    console.error('Create machine error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List machines (by organization)
+app.get('/machines', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM machines
+       WHERE org_id = $1
+       ORDER BY created_at DESC`,
+      [req.user.org_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error('List machines error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single machine
+app.get('/machines/:machine_id', authMiddleware, async (req, res) => {
+  const { machine_id } = req.params;
+
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM machines
+       WHERE machine_id = $1 AND org_id = $2`,
+      [machine_id, req.user.org_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Machine not found' });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error('Get machine error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 // =====================================================
 // ALIASES (backward compatible Spanish endpoints)
 // =====================================================
