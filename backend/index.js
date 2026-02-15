@@ -130,11 +130,12 @@ function validateCreatePayload(body) {
   return missing;
 }
 
-function createFilter(body, res) {
+async function createFilter(body, res) {
   const org_id = body._org_id;
   if (!org_id) {
     return res.status(400).json({ error: 'Missing org_id context' });
   }
+
   const missing = validateCreatePayload(body);
   if (missing.length) {
     return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
@@ -157,46 +158,48 @@ function createFilter(body, res) {
   const status = calcStatus(due_date);
   const ts = nowIso();
 
-  const sql = `
-    INSERT INTO filters (
-      org_id, filter_id, area, equipment, location, brand, model,
-      install_date, life_months, due_date, status, responsible, notes,
-      record_state, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
-  `;
+  try {
+    await db.query(
+      `INSERT INTO filters (
+        org_id, filter_id, area, equipment, location, brand, model,
+        install_date, life_months, due_date, status, responsible, notes,
+        record_state, created_at, updated_at
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,
+        $8,$9,$10,$11,$12,$13,
+        'ACTIVE',$14,$15
+      )`,
+      [
+        org_id,
+        filter_id,
+        area,
+        equipment,
+        location,
+        brand,
+        model,
+        install_date,
+        Number(life_months),
+        due_date,
+        status,
+        responsible,
+        notes || null,
+        ts,
+        ts
+      ]
+    );
 
-  db.run(
-    sql,
-    [
-      org_id,
-      filter_id,
-      area,
-      equipment,
-      location,
-      brand,
-      model,
-      install_date,
-      Number(life_months),
-      due_date,
-      status,
-      responsible,
-      notes || null,
-      ts,
-      ts
-    ],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
+    await db.query(
+      `INSERT INTO events
+       (filter_id, event_type, event_date, reason, responsible, notes, created_at)
+       VALUES ($1,'INSTALL',$2,NULL,$3,$4,$5)`,
+      [filter_id, install_date, responsible, notes || null, ts]
+    );
 
-      // Add INSTALL event (non-blocking)
-      const eSql = `
-        INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
-        VALUES (?, 'INSTALL', ?, NULL, ?, ?, ?)
-      `;
-      db.run(eSql, [filter_id, install_date, responsible, notes || null, ts], () => {});
+    return res.json({ message: 'Filter created', filter_id, due_date, status });
 
-      return res.json({ message: 'Filter created', filter_id, due_date, status });
-    }
-  );
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 }
 
 // --- Health ---
@@ -212,62 +215,90 @@ app.post('/filters', authMiddleware, (req, res) => {
   return createFilter(body, res);
 });
 
-// List filters (optional query: area, status, state)
-function listFilters(req, res) {
-  const { area, status, state, q } = req.query;
-  const clauses = [];
-  const params = [];
+// List filters (PostgreSQL version)
+async function listFilters(req, res) {
+  try {
+    const { area, status, state, q } = req.query;
+    const clauses = [];
+    const values = [];
+    let idx = 1;
 
-  const org_id = req.user.org_id;
-  clauses.push('org_id = ?');
-  params.push(org_id);
+    // Always isolate by organization
+    clauses.push(`org_id = $${idx++}`);
+    values.push(req.user.org_id);
 
-  if (area) {
-    clauses.push('area = ?');
-    params.push(area);
-  }
-  if (status) {
-    clauses.push('status = ?');
-    params.push(status);
-  }
-  if (state) {
-    clauses.push('record_state = ?');
-    params.push(state);
-  } else {
-    // Default: only ACTIVE records
-    clauses.push("record_state = 'ACTIVE'");
-  }
-  if (q) {
-    clauses.push('(filter_id LIKE ? OR equipment LIKE ? OR location LIKE ? OR brand LIKE ? OR model LIKE ?)');
-    const like = `%${q}%`;
-    params.push(like, like, like, like, like);
-  }
+    if (area) {
+      clauses.push(`area = $${idx++}`);
+      values.push(area);
+    }
 
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const sql = `SELECT * FROM filters ${where} ORDER BY due_date ASC`;
+    if (status) {
+      clauses.push(`status = $${idx++}`);
+      values.push(status);
+    }
 
-  db.all(sql, params, (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+    if (state) {
+      clauses.push(`record_state = $${idx++}`);
+      values.push(state);
+    } else {
+      clauses.push(`record_state = 'ACTIVE'`);
+    }
+
+    if (q) {
+      clauses.push(`(
+        filter_id ILIKE $${idx} OR
+        equipment ILIKE $${idx} OR
+        location ILIKE $${idx} OR
+        brand ILIKE $${idx} OR
+        model ILIKE $${idx}
+      )`);
+      values.push(`%${q}%`);
+      idx++;
+    }
+
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    const sql = `
+      SELECT *
+      FROM filters
+      ${where}
+      ORDER BY due_date ASC
+    `;
+
+    const result = await db.query(sql, values);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Error loading filters:", err);
+    res.status(500).json({ error: "Error loading filters" });
+  }
 }
 
-app.get('/filters', authMiddleware, (req, res) => {
+app.get('/filters', authMiddleware, async (req, res) => {
   return listFilters(req, res);
 });
 
-// Get one filter
-app.get('/filters/:filter_id', authMiddleware, (req, res) => {
+// Get one filter (PostgreSQL version)
+app.get('/filters/:filter_id', authMiddleware, async (req, res) => {
   const { filter_id } = req.params;
-  db.get('SELECT * FROM filters WHERE filter_id = ? AND org_id = ?', [filter_id, req.user.org_id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: 'Filter not found' });
-    res.json(row);
-  });
+
+  try {
+    const result = await db.query(
+      'SELECT * FROM filters WHERE filter_id = $1 AND org_id = $2',
+      [filter_id, req.user.org_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Filter not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-// Update filter
-app.put('/filters/:filter_id', authMiddleware, (req, res) => {
+// Update filter (PostgreSQL version)
+app.put('/filters/:filter_id', authMiddleware, async (req, res) => {
   const { filter_id } = req.params;
   const allowed = [
     'area',
@@ -281,33 +312,35 @@ app.put('/filters/:filter_id', authMiddleware, (req, res) => {
     'notes'
   ];
 
-  // Read existing first
-  db.get('SELECT * FROM filters WHERE filter_id = ? AND org_id = ?', [filter_id, req.user.org_id], (err, current) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!current) return res.status(404).json({ error: 'Filter not found' });
+  try {
+    const currentResult = await db.query(
+      'SELECT * FROM filters WHERE filter_id = $1 AND org_id = $2',
+      [filter_id, req.user.org_id]
+    );
 
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Filter not found' });
+    }
+
+    const current = currentResult.rows[0];
     const updated = { ...current };
+
     for (const k of allowed) {
       if (req.body[k] !== undefined) updated[k] = req.body[k];
     }
 
-    // Recalculate due_date/status if needed
     const install_date = updated.install_date;
     const life_months = Number(updated.life_months);
     const due_date = addMonths(install_date, life_months);
     const status = calcStatus(due_date);
     const ts = nowIso();
 
-    const sql = `
-      UPDATE filters
-      SET area=?, equipment=?, location=?, brand=?, model=?,
-          install_date=?, life_months=?, due_date=?, status=?,
-          responsible=?, notes=?, updated_at=?
-      WHERE filter_id=? AND org_id=?
-    `;
-
-    db.run(
-      sql,
+    await db.query(
+      `UPDATE filters
+       SET area=$1, equipment=$2, location=$3, brand=$4, model=$5,
+           install_date=$6, life_months=$7, due_date=$8, status=$9,
+           responsible=$10, notes=$11, updated_at=$12
+       WHERE filter_id=$13 AND org_id=$14`,
       [
         updated.area,
         updated.equipment,
@@ -323,50 +356,56 @@ app.put('/filters/:filter_id', authMiddleware, (req, res) => {
         ts,
         filter_id,
         req.user.org_id
-      ],
-      function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
-
-        // Add EDIT event
-        const eSql = `
-          INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
-          VALUES (?, 'EDIT', ?, NULL, ?, ?, ?)
-        `;
-        db.run(eSql, [filter_id, isoToday(), updated.responsible, 'Edited filter record', ts], () => {});
-
-        res.json({ message: 'Filter updated', filter_id, due_date, status });
-      }
+      ]
     );
-  });
+
+    await db.query(
+      `INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
+       VALUES ($1,'EDIT',$2,NULL,$3,$4,$5)`,
+      [filter_id, isoToday(), updated.responsible, 'Edited filter record', ts]
+    );
+
+    res.json({ message: 'Filter updated', filter_id, due_date, status });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-// Archive (soft delete)
-app.patch('/filters/:filter_id/archive', authMiddleware, (req, res) => {
+// Archive (PostgreSQL version)
+app.patch('/filters/:filter_id/archive', authMiddleware, async (req, res) => {
   const { filter_id } = req.params;
   const responsible = req.body.responsible || 'SYSTEM';
   const notes = req.body.notes || null;
   const ts = nowIso();
 
-  db.run(
-    "UPDATE filters SET record_state='ARCHIVED', updated_at=? WHERE filter_id=? AND org_id=?",
-    [ts, filter_id, req.user.org_id],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      if (this.changes === 0) return res.status(404).json({ error: 'Filter not found' });
+  try {
+    const result = await db.query(
+      `UPDATE filters
+       SET record_state='ARCHIVED', updated_at=$1
+       WHERE filter_id=$2 AND org_id=$3`,
+      [ts, filter_id, req.user.org_id]
+    );
 
-      const eSql = `
-        INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
-        VALUES (?, 'ARCHIVE', ?, NULL, ?, ?, ?)
-      `;
-      db.run(eSql, [filter_id, isoToday(), responsible, notes, ts], () => {});
-
-      res.json({ message: 'Filter archived', filter_id });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Filter not found' });
     }
-  );
+
+    await db.query(
+      `INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
+       VALUES ($1,'ARCHIVE',$2,NULL,$3,$4,$5)`,
+      [filter_id, isoToday(), responsible, notes, ts]
+    );
+
+    res.json({ message: 'Filter archived', filter_id });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-// Replace filter: archive old + create new + event trail
-app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
+// Replace filter (PostgreSQL version)
+app.post('/filters/:filter_id/replace', authMiddleware, async (req, res) => {
   const { filter_id } = req.params;
   const {
     new_filter_id,
@@ -375,7 +414,6 @@ app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
     responsible,
     reason,
     notes,
-    // Optional overrides (if you keep same equipment/location/brand/model, you can omit)
     area,
     equipment,
     location,
@@ -387,9 +425,17 @@ app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'new_filter_id, install_date, life_months, responsible are required' });
   }
 
-  db.get('SELECT * FROM filters WHERE filter_id = ? AND org_id = ?', [filter_id, req.user.org_id], (err, current) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!current) return res.status(404).json({ error: 'Filter not found' });
+  try {
+    const currentResult = await db.query(
+      'SELECT * FROM filters WHERE filter_id=$1 AND org_id=$2',
+      [filter_id, req.user.org_id]
+    );
+
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Filter not found' });
+    }
+
+    const current = currentResult.rows[0];
 
     const next = {
       filter_id: new_filter_id,
@@ -408,83 +454,93 @@ app.post('/filters/:filter_id/replace', authMiddleware, (req, res) => {
     const status = calcStatus(due_date);
     const ts = nowIso();
 
-    db.serialize(() => {
-      // 1) archive current
-      db.run("UPDATE filters SET record_state='ARCHIVED', updated_at=? WHERE filter_id=? AND org_id=?", [ts, filter_id, req.user.org_id]);
+    await db.query('BEGIN');
 
-      // 2) log REPLACE event on old
-      db.run(
-        `INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
-         VALUES (?, 'REPLACE', ?, ?, ?, ?, ?)`,
-        [filter_id, install_date, reason || 'Programado', responsible, notes || null, ts]
-      );
+    await db.query(
+      `UPDATE filters
+       SET record_state='ARCHIVED', updated_at=$1
+       WHERE filter_id=$2 AND org_id=$3`,
+      [ts, filter_id, req.user.org_id]
+    );
 
-      // 3) create new filter
-      const createSql = `
-        INSERT INTO filters (
-          org_id, filter_id, area, equipment, location, brand, model,
-          install_date, life_months, due_date, status, responsible, notes,
-          record_state, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
-      `;
+    await db.query(
+      `INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
+       VALUES ($1,'REPLACE',$2,$3,$4,$5,$6)`,
+      [filter_id, install_date, reason || 'Programado', responsible, notes || null, ts]
+    );
 
-      db.run(
-        createSql,
-        [
-          req.user.org_id,
-          next.filter_id,
-          next.area,
-          next.equipment,
-          next.location,
-          next.brand,
-          next.model,
-          next.install_date,
-          next.life_months,
-          due_date,
-          status,
-          next.responsible,
-          next.notes,
-          ts,
-          ts
-        ],
-        function (err2) {
-          if (err2) return res.status(500).json({ error: err2.message });
+    await db.query(
+      `INSERT INTO filters (
+        org_id, filter_id, area, equipment, location, brand, model,
+        install_date, life_months, due_date, status, responsible, notes,
+        record_state, created_at, updated_at
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,
+        $8,$9,$10,$11,$12,$13,
+        'ACTIVE',$14,$15
+      )`,
+      [
+        req.user.org_id,
+        next.filter_id,
+        next.area,
+        next.equipment,
+        next.location,
+        next.brand,
+        next.model,
+        next.install_date,
+        next.life_months,
+        due_date,
+        status,
+        next.responsible,
+        next.notes,
+        ts,
+        ts
+      ]
+    );
 
-          // 4) log INSTALL event on new
-          db.run(
-            `INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
-             VALUES (?, 'INSTALL', ?, NULL, ?, ?, ?)`,
-            [next.filter_id, next.install_date, responsible, next.notes, ts]
-          );
+    await db.query(
+      `INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
+       VALUES ($1,'INSTALL',$2,NULL,$3,$4,$5)`,
+      [next.filter_id, next.install_date, responsible, next.notes, ts]
+    );
 
-          res.json({
-            message: 'Filter replaced',
-            old_filter_id: filter_id,
-            new_filter_id: next.filter_id,
-            due_date,
-            status
-          });
-        }
-      );
+    await db.query('COMMIT');
+
+    res.json({
+      message: 'Filter replaced',
+      old_filter_id: filter_id,
+      new_filter_id: next.filter_id,
+      due_date,
+      status
     });
-  });
+
+  } catch (err) {
+    await db.query('ROLLBACK');
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-// Events for a filter
-app.get('/filters/:filter_id/events', authMiddleware, (req, res) => {
+// Events for a filter (PostgreSQL version)
+app.get('/filters/:filter_id/events', authMiddleware, async (req, res) => {
   const { filter_id } = req.params;
-  db.all(
-    'SELECT * FROM events WHERE filter_id = ? ORDER BY event_date DESC, event_id DESC',
-    [filter_id],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(rows);
-    }
-  );
+
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM events
+       WHERE filter_id = $1
+       ORDER BY event_date DESC`,
+      [filter_id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-// Create manual event (SERVICE)
-app.post('/filters/:filter_id/events', authMiddleware, (req, res) => {
+// Create manual event (SERVICE) (PostgreSQL version)
+app.post('/filters/:filter_id/events', authMiddleware, async (req, res) => {
   const { filter_id } = req.params;
   const {
     event_type = 'SERVICE',
@@ -500,20 +556,24 @@ app.post('/filters/:filter_id/events', authMiddleware, (req, res) => {
 
   const ts = nowIso();
 
-  const sql = `
-    INSERT INTO events (filter_id, event_type, event_date, reason, responsible, notes, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.run(sql, [filter_id, event_type, event_date, reason, responsible, notes, ts], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const result = await db.query(
+      `INSERT INTO events
+       (filter_id, event_type, event_date, reason, responsible, notes, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING event_id`,
+      [filter_id, event_type, event_date, reason, responsible, notes, ts]
+    );
 
     res.json({
       message: 'Event created',
-      event_id: this.lastID,
+      event_id: result.rows[0].event_id,
       filter_id
     });
-  });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // =====================================================
