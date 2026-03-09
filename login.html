@@ -43,7 +43,9 @@
   </div>
 
   <script>
-    const API = 'http://localhost:3000';
+    const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:3000'
+      : 'https://filtracore-api.onrender.com';
 
     // Load saved language or default
     const savedLang = localStorage.getItem('lang') || 'es';
