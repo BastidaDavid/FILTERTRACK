@@ -399,7 +399,7 @@ app.get('/reports/executive.xlsx', authMiddleware, async (req, res) => {
               f.due_date,
               f.status
        FROM filters f
-       LEFT JOIN machines m ON f.machine_id = m.machine_id AND f.org_id = m.org_id
+       LEFT JOIN machines m ON f.machine_id = m.id AND f.org_id = m.org_id
        LEFT JOIN machine_brands b ON m.brand_id = b.id
        LEFT JOIN machine_models mm ON m.model_id = mm.id
        WHERE f.org_id = $1
@@ -514,7 +514,7 @@ async function listFilters(req, res) {
         f.machine_id
       FROM filters f
       LEFT JOIN machines m
-        ON f.machine_id = m.machine_id
+        ON f.machine_id = m.id
         AND f.org_id = m.org_id
       LEFT JOIN machine_brands b
         ON m.brand_id = b.id
@@ -552,7 +552,7 @@ app.get('/filters/:filter_id', authMiddleware, async (req, res) => {
         m.machine_id
       FROM filters f
       LEFT JOIN machines m
-        ON f.machine_id = m.machine_id
+        ON f.machine_id = m.id
         AND f.org_id = m.org_id
       WHERE f.filter_id = $1
         AND f.org_id = $2
@@ -1558,7 +1558,7 @@ app.get('/machines/:machine_id/filters', authMiddleware, async (req, res) => {
           f.machine_id
        FROM filters f
        LEFT JOIN machines m
-         ON f.machine_id = m.machine_id
+         ON f.machine_id = m.id
          AND f.org_id = m.org_id
        LEFT JOIN machine_brands b
          ON m.brand_id = b.id
