@@ -175,10 +175,8 @@ app.post('/auth/login', async (req, res) => {
       `SELECT 
           u.user_id,
           u.password_hash,
-          u.company_id,
-          c.company_name,
-          c.machine_limit,
-          c.plan
+          u.org_id,
+          c.org_name
         FROM users u
         LEFT JOIN organizations c ON u.org_id = c.org_id
         WHERE u.user_id = $1`,
@@ -199,8 +197,7 @@ app.post('/auth/login', async (req, res) => {
     const token = jwt.sign(
       { 
         user_id: user.user_id,
-        org_id: user.company_id, // temporarily map org_id to company_id
-        company_id: user.company_id
+        org_id: user.org_id
       },
       JWT_SECRET,
       { expiresIn: '8h' }
@@ -208,11 +205,9 @@ app.post('/auth/login', async (req, res) => {
 
     res.json({
       token,
-      company: {
-        company_id: user.company_id,
-        company_name: user.company_name,
-        machine_limit: user.machine_limit,
-        plan: user.plan
+      organization: {
+        org_id: user.org_id,
+        org_name: user.org_name
       }
     });
 
