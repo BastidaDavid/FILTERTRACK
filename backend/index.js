@@ -2003,6 +2003,11 @@ const PORT = Number(process.env.PORT || 3000);
       `);
       console.log("✅ DB schema check: machines.org_id column verified");
       await db.query(`
+        ALTER TABLE machines
+        ADD COLUMN IF NOT EXISTS serial_number TEXT
+      `);
+      console.log("✅ DB schema check: machines.serial_number column verified");
+      await db.query(`
         ALTER TABLE filters
         ADD COLUMN IF NOT EXISTS model_filter_id INTEGER
       `);
