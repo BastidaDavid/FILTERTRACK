@@ -179,7 +179,7 @@ app.post('/auth/login', async (req, res) => {
           c.machine_limit,
           c.plan
         FROM users u
-        LEFT JOIN companies c ON u.company_id = c.id
+        LEFT JOIN organizations c ON u.org_id = c.org_id
         WHERE u.user_id = $1`,
       [user_id]
     );
