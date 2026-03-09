@@ -302,15 +302,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // AUTH TOKEN HELPER
   // -----------------------------
   function getToken() {
-    const token = localStorage.getItem('token')
+    // Try common storage keys in case login saved it differently
+    let token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken') ||
+      localStorage.getItem('access_token');
 
-    if (!token) {
-      alert('Sesión expirada. Inicia sesión nuevamente.')
-      window.location.href = 'login.html'
-      return null
+    // If token was saved as JSON, parse it
+    try {
+      if (token && token.startsWith('{')) {
+        const parsed = JSON.parse(token);
+        token = parsed.token || parsed.access_token || null;
+      }
+    } catch (e) {
+      console.warn('Token parse warning:', e);
     }
 
-    return token
+    if (!token) {
+      console.warn('No auth token found in localStorage');
+      alert('Sesión expirada. Inicia sesión nuevamente.');
+      window.location.href = 'login.html';
+      return null;
+    }
+
+    return token;
   }
 
   // -----------------------------
@@ -323,19 +338,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentLang = localStorage.getItem('lang') || 'es'
 
     const headers = {
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`,
       'Accept-Language': currentLang
-    }
+    };
 
     // Only attach JSON header if body exists
-    if (options.body) {
-      headers['Content-Type'] = 'application/json'
+    if (options.body && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
     }
 
     const response = await fetch(url, {
       ...options,
       headers
-    })
+    });
 
     if (response.status === 401) {
       localStorage.removeItem('token')
