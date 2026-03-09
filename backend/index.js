@@ -1992,6 +1992,11 @@ const PORT = Number(process.env.PORT || 3000);
         ADD COLUMN IF NOT EXISTS machine_id TEXT
       `);
       console.log("✅ DB schema check: machine_id column verified");
+      await db.query(`
+        ALTER TABLE filters
+        ADD COLUMN IF NOT EXISTS org_id TEXT
+      `);
+      console.log("✅ DB schema check: org_id column verified");
     } catch (schemaErr) {
       console.error("⚠️ Schema verification warning:", schemaErr.message);
     }
