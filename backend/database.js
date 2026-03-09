@@ -6,16 +6,32 @@ if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL is not defined in environment variables');
   process.exit(1);
 }
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 20000,
-  keepAlive: true
-});
+
+const rawUrl = process.env.DATABASE_URL;
+
+// Always force SSL for cloud databases (Render requires it)
+const isLocal = rawUrl.includes('localhost');
+
+const pool = new Pool(
+  isLocal
+    ? {
+        user: 'davidbastida',
+        host: 'localhost',
+        database: 'filtertrack',
+        port: 5432,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 20000,
+      }
+    : {
+        connectionString: rawUrl,
+        ssl: { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 20000,
+        keepAlive: true
+      }
+);
 
 pool.on('connect', () => {
   console.log('✅ PostgreSQL connected');
@@ -27,99 +43,16 @@ pool.on('error', (err) => {
 
 async function initSchema() {
   try {
-    // Test connection explicitly
+    // Verify connection
     await pool.query('SELECT 1');
-    // Organizations table (Multi-tenant SaaS)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS organizations (
-        org_id TEXT PRIMARY KEY,
-        org_name TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    console.log('✅ PostgreSQL schema verified');
 
-    // Users table (Auth system)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        user_id TEXT PRIMARY KEY,
-        org_id TEXT NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Log which database the backend is actually connected to
+    const dbNameResult = await pool.query('SELECT current_database()');
+    console.log('🔥 Backend connected to DB:', dbNameResult.rows[0].current_database);
 
-    // Filters table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS filters (
-        filter_id TEXT PRIMARY KEY,
-        org_id TEXT NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-        area TEXT,
-        equipment TEXT,
-        location TEXT,
-        brand TEXT,
-        model TEXT,
-        install_date DATE,
-        life_months INTEGER,
-        due_date DATE,
-        status TEXT,
-        responsible TEXT,
-        notes TEXT,
-        record_state TEXT DEFAULT 'ACTIVE',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Events table (audit trail)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS events (
-        event_id SERIAL PRIMARY KEY,
-        org_id TEXT NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-        filter_id TEXT NOT NULL REFERENCES filters(filter_id) ON DELETE CASCADE,
-        event_type TEXT NOT NULL,
-        event_date DATE NOT NULL,
-        reason TEXT,
-        responsible TEXT,
-        notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Machine Brands table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS machine_brands (
-        brand_id SERIAL PRIMARY KEY,
-        brand_name TEXT NOT NULL UNIQUE,
-        category TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Seed default brands (safe for re-run)
-    await pool.query(`
-      INSERT INTO machine_brands (brand_name, category)
-      VALUES
-        ('Scotsman', 'ICE'),
-        ('Hoshizaki', 'ICE'),
-        ('Manitowoc', 'ICE'),
-        ('Follett', 'ICE'),
-        ('Ice-O-Matic', 'ICE'),
-        ('Lancer', 'SODA'),
-        ('Multiplex', 'SODA'),
-        ('Bunn', 'COFFEE'),
-        ('Curtis', 'COFFEE')
-      ON CONFLICT (brand_name) DO NOTHING;
-    `);
-
-    // Indexes for multi-tenant performance
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_org ON users(org_id);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_filters_org ON filters(org_id);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_events_org ON events(org_id);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_events_filter ON events(filter_id);`);
-
-    console.log('✅ PostgreSQL schema ready');
   } catch (err) {
-    console.error('❌ Schema init error FULL:', err);
+    console.error('❌ Database connection error:', err);
   }
 }
 
@@ -127,3 +60,4 @@ module.exports = {
   db: pool,
   initSchema
 };
+

@@ -17,10 +17,20 @@ function diffDays(fromIso, toIso) {
   return Math.floor((b - a) / (1000 * 60 * 60 * 24));
 }
 
-function calcStatus(dueDate, today = isoToday()) {
-  const daysLeft = diffDays(today, dueDate);
-  if (daysLeft <= 0) return 'EXPIRED';
-  if (daysLeft <= 30) return 'DUE_SOON';
+function calcStatus(dueDate, installDate, lifeMonths) {
+  const todayIso = isoToday();
+  const remainingDays = diffDays(todayIso, dueDate);
+
+  // 🔴 Expired
+  if (remainingDays <= 0) return 'EXPIRED';
+
+  // 🟠 Critical (1–30 days remaining)
+  if (remainingDays <= 30) return 'CRITICAL';
+
+  // 🟡 Due soon (31–90 days remaining)
+  if (remainingDays <= 90) return 'DUE_SOON';
+
+  // 🟢 Active (> 90 days remaining)
   return 'ACTIVE';
 }
 
