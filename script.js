@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const API_BASE = isLocal
     ? 'http://localhost:3000'
-    : window.location.origin;
+    : 'https://filtracore-api.onrender.com';
   const API_URL = `${API_BASE}/filters`
 
   const REPORTS_URL = `${API_BASE}/reports`
