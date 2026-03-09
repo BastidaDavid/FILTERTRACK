@@ -1981,6 +1981,21 @@ const PORT = Number(process.env.PORT || 3000);
 (async () => {
   try {
     await initSchema();
+
+    // ==============================
+    // AUTO DB SAFETY FIX (Render free plan compatibility)
+    // Ensures new columns exist even if migrations were missed
+    // ==============================
+    try {
+      await db.query(`
+        ALTER TABLE filters
+        ADD COLUMN IF NOT EXISTS machine_id TEXT
+      `);
+      console.log("✅ DB schema check: machine_id column verified");
+    } catch (schemaErr) {
+      console.error("⚠️ Schema verification warning:", schemaErr.message);
+    }
+
     await ensureGeneralMachine();
 
     const server = app.listen(PORT, "0.0.0.0", () => {
