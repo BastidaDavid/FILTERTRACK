@@ -120,33 +120,34 @@ app.post('/auth/register', async (req, res) => {
 
     await db.query('BEGIN');
 
-    // 1️⃣ Create company automatically
-    const companyResult = await db.query(
-      `INSERT INTO companies (company_name, machine_limit, plan, created_at)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id`,
+    // 1️⃣ Create organization automatically
+    const orgId = company_name.toUpperCase().replace(/\s+/g, '_');
+
+    const orgResult = await db.query(
+      `INSERT INTO organizations (org_id, org_name, created_at)
+       VALUES ($1, $2, $3)
+       RETURNING org_id`,
       [
+        orgId,
         company_name,
-        machine_limit || 3,
-        plan || 'BASIC',
         ts
       ]
     );
 
-    const company_id = companyResult.rows[0].id;
+    const org_id = orgResult.rows[0].org_id;
 
-    // 2️⃣ Create user linked to that company
+    // 2️⃣ Create user linked to that organization
     await db.query(
-      `INSERT INTO users (user_id, password_hash, company_id, created_at)
+      `INSERT INTO users (user_id, password_hash, org_id, created_at)
        VALUES ($1, $2, $3, $4)`,
-      [user_id, hash, company_id, ts]
+      [user_id, hash, org_id, ts]
     );
 
     await db.query('COMMIT');
 
     res.json({
-      message: 'Company and user created successfully',
-      company_id
+      message: 'Organization and user created successfully',
+      org_id
     });
 
   } catch (err) {
