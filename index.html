@@ -1,139 +1,412 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <base href="./">
-  <title>Dashboard – Bitácora de Máquinas</title>
+  <title>FiltraCore | Bastida Systems</title>
   <link rel="stylesheet" href="style_index.css" />
+  <link rel="icon" href="data:,">
 </head>
 <body>
 
   <script>
     const token = localStorage.getItem('token');
+
+    // If no token, go back to login
     if (!token) {
       window.location.href = 'login.html';
     }
+
+    // Helper for authenticated fetch requests
+    window.authFetch = async (url, options = {}) => {
+      const currentToken = localStorage.getItem('token');
+
+      if (!currentToken) {
+        alert('Sesión expirada. Inicia sesión nuevamente.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentToken}`,
+        ...(options.headers || {})
+      };
+
+      return fetch(url, {
+        ...options,
+        headers
+      });
+    };
   </script>
 
   <div class="layout">
 
     <!-- SIDEBAR IZQUIERDA: MÁQUINAS -->
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2 class="sidebar-title">Máquinas</h2>
-        <button type="button" id="btn-nueva-maquina" class="btn-primary">+ Nueva</button>
+      <!-- Organization Selector -->
+      <div class="sidebar-org" style="margin-bottom:12px;">
+        <label for="org-display" style="font-size:12px; opacity:0.7; display:block; margin-bottom:4px;" data-i18n="organizationLabel">
+          Organization
+        </label>
+        <input 
+          type="text" 
+          id="org-display" 
+          disabled 
+          style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; background:#f3f4f6; font-size:14px;"
+        />
       </div>
 
+      <!-- Sidebar Filters -->
+      <div class="sidebar-filters" style="margin-bottom:12px;">
+        <select id="building-filter" style="width:100%; margin-bottom:8px; padding:8px; border-radius:6px;">
+          <option value="">All Buildings</option>
+        </select>
+
+        <select id="floor-filter" style="width:100%; margin-bottom:8px; padding:8px; border-radius:6px;">
+          <option value="">All Floors</option>
+        </select>
+      </div>
+      <div class="sidebar-header" style="display:flex; flex-direction:column; gap:8px;">
+        <h2 class="sidebar-title" data-i18n="maquinas" style="margin:0;">Machines</h2>
+
+        <div style="display:flex; gap:6px;">
+          <button type="button" id="btn-nueva-maquina" class="btn">
+            New
+          </button>
+
+          <button type="button" id="btn-editar-maquina" class="btn" disabled>
+            ✏️ Edit
+          </button>
+
+          <button type="button" id="btn-archivar-maquina" class="btn" disabled>
+            🗄️ Archive
+          </button>
+        </div>
+      </div>
+
+      <div class="machine-search-container" style="margin-bottom:12px;">
+        <input 
+          type="text" 
+          id="machine-search" 
+          placeholder="🔍 Search machine..."
+          data-i18n-placeholder="searchMachine"
+          style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #2a2a2a; background:#111; color:#fff; font-size:14px;"
+        />
+      </div>
       <ul id="lista-maquinas" class="lista-maquinas">
-        <!-- JS inserta máquinas aquí -->
+        <!-- JS renderiza todas las máquinas dinámicamente -->
       </ul>
+      
 
-      <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout" type="button">Cerrar sesión</button>
-      </div>
     </aside>
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
 
-      <div class="header-bar">
-        <div>
-          <h1 class="app-title" style="margin:0;">FILTERTRACK</h1>
-          <div id="titulo-maquina" class="sub-title">Selecciona una máquina</div>
-        </div>
+<!-- ===== DASHBOARD HEADER ===== -->
+<div class="dashboard-header">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <img src="imgs/logo.png" alt="FiltraCore Logo" style="width:130px; height:130px; object-fit:cover; border-radius:20px;" />
+    <div>
+      <h1 class="dashboard-title">FiltraCore</h1>
+      <p class="dashboard-subtitle">
+        Core Filtration Management System — by Bastida Systems
+      </p>
+    </div>
+  </div>
 
-        <div class="header-actions">
-          <button type="button" id="btn-reporte-pdf" class="btn-reporte">📄 PDF</button>
-          <button type="button" id="btn-reporte-excel" class="btn-reporte">📊 Excel</button>
+  <div class="dashboard-actions">
+    <button id="btn-export-pdf" class="btn">
+      📄 Export PDF
+    </button>
+
+    <button id="btn-export-excel" class="btn">
+      📊 Export Excel
+    </button>
+
+    <button id="btn-logout" class="btn" type="button">
+      🔐 Logout
+    </button>
+  </div>
+</div>
+
+
+<div class="psi-section-title" style="margin-top:20px; margin-bottom:10px;">
+
+</div>
+<div class="psi-cards-row">
+  <div id="machine-psi-status" class="psi-status-card">
+    <div class="psi-status-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <span data-i18n="pressureStatus">Pressure Status</span>
+      <div style="display:flex; gap:6px;">
+        <button type="button" id="btn-psi-manual" class="btn psi-action-btn">
+          ✍️ Manual
+        </button>
+        <button type="button" id="btn-psi-max" class="btn psi-action-btn">
+          ⚙ Max PSI
+        </button>
+        <button type="button" id="btn-psi-history" class="btn psi-action-btn">
+          📋 History
+        </button>
+      </div>
+    </div>
+
+    <div class="psi-status-main">
+      <span id="psi-current-value">-- PSI</span>
+      <span id="psi-current-state">—</span>
+    </div>
+
+    <div id="psi-last-reading" class="psi-status-sub">
+      Last reading: —
+    </div>
+  </div>
+  <div class="psi-water-wrapper">
+    <div id="machine-water-status" class="psi-status-card">
+      <div class="psi-status-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <span>Water Capacity Status</span>
+        <div style="display:flex; gap:6px;">
+          <button type="button" id="btn-water-manual" class="btn psi-action-btn">
+            ✍️ Manual
+          </button>
+          <button type="button" id="btn-water-max" class="btn psi-action-btn">
+            ⚙ Max LT
+          </button>
+          <button type="button" id="btn-water-history" class="btn psi-action-btn">
+            📋 History
+          </button>
         </div>
       </div>
+
+      <div class="psi-status-main">
+        <span id="water-current-value">-- / -- GAL</span>
+        <span id="water-current-state">—</span>
+      </div>
+
+      <div id="water-last-reading" class="psi-status-sub">
+        Last update: —
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== KPI CARDS ===== -->
+<div class="kpi-section-title" style="margin-top:20px; margin-bottom:10px;">
+  <h2 style="font-size:18px; font-weight:600; letter-spacing:0.5px;" data-i18n="filtros">
+    Filters
+  </h2>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card kpi-blue">
+    <div class="kpi-value" id="kpi-total">0</div>
+    <div class="kpi-label" data-i18n="totalActivas">Total Active</div>
+  </div>
+
+  <div class="kpi-card kpi-orange">
+    <div class="kpi-value" id="kpi-warning">0</div>
+    <div class="kpi-label" data-i18n="proximas">Expiring Soon</div>
+  </div>
+
+  <div class="kpi-card kpi-red">
+    <div class="kpi-value" id="kpi-critical">0</div>
+    <div class="kpi-label" data-i18n="criticas">Critical</div>
+  </div>
+
+  <div class="kpi-card kpi-green">
+    <div class="kpi-value" id="kpi-average">0%</div>
+    <div class="kpi-label" data-i18n="vidaPromedio">Average Remaining Life</div>
+  </div>
+</div>
 
       <!-- COLUMNA / PANEL PRINCIPAL (lo que ya tenías) -->
       <div class="col-filtros">
 
-        <form id="form-filtro">
-          <h2>Agregar máquina</h2>
+<form id="form-filtro">
+<div class="collapsible-header" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin-bottom:12px;">
+  <h2 id="titulo-formulario" data-i18n="addMachineInfo" style="margin:0;">
+    Add machine information to generate automatic filter:
+  </h2>
+<button type="button" id="toggle-machine-form" class="btn" style="padding:4px 10px; font-size:14px; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+  +
+</button>
+</div>
 
-          <input type="text" id="filter-id" name="filter_id" placeholder="Machine ID (ej. ICE-01)" required />
-          <input type="text" id="area" name="area" placeholder="Área (ej. BAR)" required />
-          <input type="text" id="equipment" name="equipment" placeholder="Equipo/Máquina (ej. ICE-01)" required />
-          <input type="text" id="location" name="location" placeholder="Ubicación exacta" required />
+<div id="machine-form-collapsible" style="display:none;">
+<div class="machine-filter-wrapper">
 
-          <label for="brand" style="font-size:12px; opacity:0.7;">Marca</label>
-          <select id="brand" name="brand_id" required>
-            <option value="">Selecciona Marca</option>
-          </select>
+  <!-- LEFT COLUMN -->
+  <div class="machine-filter-left">
 
-          <label for="model" style="font-size:12px; opacity:0.7;">Modelo</label>
-          <select id="model" name="model_id" required>
-            <option value="">Selecciona Modelo</option>
-          </select>
-          <div id="filter-suggestion" class="filter-suggestion" style="display:none; margin:10px 0; padding:10px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid #334155;">
-            <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Filtro recomendado</div>
-            <div id="filter-name" style="font-weight:600; font-size:14px;"></div>
+    <div class="machine-input-grid">
+          <input type="text" id="area" name="area" placeholder="Area (e.g. BAR)" required />
+          <input type="text" id="serial-number" name="serial_number" placeholder="Serial Number (e.g. SN-45822-A)" required />
+          <input type="text" id="location" name="location" placeholder="Exact Location" required />
+          <input type="text" id="machine-building" name="building" placeholder="Building (ej. Torre A)" />
+          <input type="text" id="machine-floor" name="floor" placeholder="Floor (ej. Piso 3)" />
+          <input type="text" id="machine-zone" name="zone" placeholder="Zone (ej. Barra Norte)" />
+
+          <div class="field-group">
+            <label for="brand" data-i18n="brand">Marca</label>
+            <select id="brand" name="brand_id" required>
+              <option value="">Selecciona Marca</option>
+            </select>
           </div>
 
-          <input type="date" id="install-date" name="install_date" required />
-          <input type="number" id="life-months" name="life_months" placeholder="Vida útil (meses)" min="1" step="1" required />
+          <div class="field-group">
+            <label for="model" data-i18n="model">Modelo</label>
+            <select id="model" name="model_id" required>
+              <option value="">Selecciona Modelo</option>
+            </select>
+          </div>
+    </div>
 
-          <input type="text" id="responsible" name="responsible" placeholder="Responsable (iniciales o nombre)" required />
-          <input type="text" id="notes" name="notes" placeholder="Notas (opcional)" />
+  <div id="filter-suggestion" class="filter-suggestion" style="display:none;">
+    <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Recommended Filter</div>
+    <div id="filter-name" style="font-weight:600; font-size:15px;"></div>
+  </div>
 
-          <button type="submit">Guardar máquina</button>
-          <button type="button" id="btn-limpiar">Limpiar campos</button>
+  <label for="install-date">Filter Installation Date</label>
+  <input type="date" id="install-date" name="install_date" required />
+
+  <div style="display:flex; gap:12px;">
+    <input type="number" id="life-months" placeholder="Months" min="0" step="1" value="0" />
+    <input type="number" id="life-days" placeholder="Days" min="0" max="30" step="1" />
+  </div>
+
+  <input type="text" id="responsible" name="responsible" placeholder="Responsible (initials or name)" required />
+  <input type="text" id="notes" name="notes" placeholder="Notes (optional)" />
+
+  <div style="display:flex; gap:12px; margin-top:10px;">
+    <button type="submit">Save Filter</button>
+    <button type="button" id="btn-limpiar">Clear Fields</button>
+  </div>
+
+  </div> <!-- END LEFT COLUMN -->
+
+  <!-- RIGHT COLUMN -->
+  <div class="machine-filter-right">
+
+<!-- RIGHT COLUMN TECH CARD -->
+<div class="filter-tech-card">
+  <h3>FILTER TECHNICAL SHEET</h3>
+
+  <div class="tech-row">
+    <span>Filter Name</span>
+    <strong id="main-tech-filter-name">—</strong>
+  </div>
+
+  <div class="tech-row">
+    <span>Life</span>
+    <strong id="main-tech-filter-life">—</strong>
+  </div>
+
+  <div class="tech-row">
+    <span>Water Capacity</span>
+    <strong id="main-tech-filter-capacity">—</strong>
+  </div>
+
+  <div class="tech-row">
+    <span>Micron Rating</span>
+    <strong id="main-tech-filter-micron">—</strong>
+  </div>
+
+  <div class="tech-row">
+    <span>Chlorine Capacity</span>
+    <strong id="main-tech-filter-chlorine">—</strong>
+  </div>
+
+  <div class="tech-row">
+    <span>Max Flow</span>
+    <strong id="main-tech-filter-flow">—</strong>
+  </div>
+
+  <div class="tech-row">
+    <span>Recommended PSI</span>
+    <strong id="main-tech-filter-psi">—</strong>
+  </div>
+
+  <div class="tech-description" id="main-tech-filter-notes">
+    Select a model to see full technical specifications.
+  </div>
+</div>
+  </div> <!-- END RIGHT COLUMN -->
+        </div>
         </form>
 
+        </div>
+
         <div class="estado-bar">
-          <button class="estado-btn activo" data-estado="all">
-            Todos (<span id="count-all">0</span>)
+          <button type="button" id="btn-all" class="estado-btn active" data-estado="all">
+            <span data-i18n="allBtn">All</span> (<span id="count-all">0</span>)
           </button>
 
-          <button class="estado-btn" data-estado="proximo">
-            Próximos (<span id="count-proximo">0</span>)
+          <button type="button" id="btn-soon" class="estado-btn" data-estado="proximo">
+            <span data-i18n="soonBtn">Soon</span> (<span id="count-proximo">0</span>)
           </button>
 
-          <button class="estado-btn" data-estado="vencido">
-            Vencidos (<span id="count-vencido">0</span>)
+          <button type="button" id="btn-expired" class="estado-btn" data-estado="vencido">
+            <span data-i18n="expiredBtn">Expired</span> (<span id="count-vencido">0</span>)
           </button>
         </div>
 
         <table id="tabla-filtros" class="tabla-principal">
           <thead>
             <tr>
-              <th>Machine ID</th>
-              <th>Área</th>
-              <th>Equipo</th>
-              <th>Ubicación</th>
-              <th>Marca</th>
-              <th>Modelo</th>
-              <th>Filtro</th>
-              <th>Instalación</th>
-              <th>Vence</th>
-              <th>Estado</th>
-              <th class="acciones-col">Acciones</th>
+              <th data-i18n="filterId">Filter ID</th>
+              <th data-i18n="area">Area</th>
+              <th data-i18n="serial">Serial No.</th>
+              <th data-i18n="location">Location</th>
+              <th data-i18n="brand">Marca</th>
+              <th data-i18n="model">Modelo</th>
+              <th data-i18n="filter">Filter</th>
+              <th data-i18n="install">Installed</th>
+              <th data-i18n="due">Due</th>
+              <th data-i18n="status">Status</th>
+              <th class="acciones-col" data-i18n="actions">Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
 
-      <!-- PANEL LATERAL DERECHO: HISTORIAL -->
-      <div class="col-mantenimientos">
-        <button id="btn-cerrar-panel" type="button" style="float:right;">✕</button>
-        <h2>Historial de la máquina</h2>
 
-        <table id="tabla-mantenimientos">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Motivo</th>
-              <th>Responsable</th>
-              <th>Notas</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <!-- PANEL LATERAL DERECHO: HISTORIAL -->
+      <div id="machineHistoryPanel" class="history-panel">
+        <div class="history-header">
+          <h3 id="historyTitle">Machine History</h3>
+          <button type="button" id="btn-cerrar-history">✖</button>
+        </div>
+        <div id="historyContent"></div>
+      </div>
+
+      <!-- PANEL LATERAL DERECHO: EDIT FILTER -->
+      <div id="editFilterPanel" class="history-panel">
+        <div class="history-header">
+          <h3>Edit Filter</h3>
+          <button type="button" id="btn-cerrar-edit">✖</button>
+        </div>
+
+        <div id="editFilterContent" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+
+          <label for="edit-install-date">Installation Date</label>
+          <input type="date" id="edit-install-date" />
+
+          <div style="display:flex; gap:12px;">
+            <input type="number" id="edit-life-months" placeholder="Months" min="0" />
+            <input type="number" id="edit-life-days" placeholder="Days" min="0" max="30" />
+          </div>
+
+          <input type="text" id="edit-responsible" placeholder="Responsible" />
+          <input type="text" id="edit-notes" placeholder="Notes" />
+
+          <div style="margin-top:10px;">
+            <button type="button" id="btn-save-edit" class="btn">
+              Save Changes
+            </button>
+          </div>
+
+        </div>
       </div>
 
     </main>
@@ -141,6 +414,291 @@
 
 <div id="overlay" class="overlay"></div>
 
+
+<!-- ===== MODAL: PSI MANUAL ===== -->
+<div id="modal-psi-manual" class="modal hidden">
+  <div class="modal-content" style="max-width:520px;">
+    <h2 style="margin-bottom:10px;">Register Manual PSI</h2>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label for="manual-psi-input" style="font-size:14px; opacity:0.8;">PSI</label>
+      <input
+        type="number"
+        id="manual-psi-input"
+        placeholder="Ej. 25"
+        min="0"
+        step="0.1"
+        style="width:140px;"
+      />
+
+      <label for="psi-note" style="font-size:14px; opacity:0.8;">Note</label>
+      <input
+        type="text"
+        id="psi-note"
+        placeholder="Opcional (ej. manómetro)"
+        style="flex:1; min-width:220px;"
+      />
+    </div>
+
+    <div style="margin-top:8px; font-size:12px; opacity:0.7;">
+      It will be saved as a manual reading for the selected machine.
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button type="button" id="save-manual-psi" class="btn">Save</button>
+      <button type="button" id="cancel-manual-psi" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== MODAL: MAX PSI ===== -->
+<div id="modal-psi-max" class="modal hidden">
+  <div class="modal-content" style="max-width:520px;">
+    <h2 style="margin-bottom:10px;">Configure Max PSI</h2>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label for="max-psi-input" style="font-size:14px; opacity:0.8;">Max PSI</label>
+      <input
+        type="number"
+        id="max-psi-input"
+        placeholder="Ej. 80"
+        min="1"
+        step="1"
+        style="width:140px;"
+      />
+    </div>
+
+    <div style="margin-top:8px; font-size:12px; opacity:0.7;">
+      This value defines when the system will mark warning or critical.
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button type="button" id="btn-save-max-psi" class="btn">Save</button>
+      <button type="button" id="btn-cancel-max-psi" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: PSI HISTORY ===== -->
+<div id="modal-psi-history" class="modal hidden">
+  <div class="modal-content" style="max-width:700px;">
+    <h2>PSI History</h2>
+
+    <div id="psi-history-container" style="margin-top:10px;"></div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button id="btn-print-history" class="btn">🖨️ Print</button>
+      <button id="btn-download-history" class="btn">⬇️ Download</button>
+      <button id="btn-share-history" class="btn">📤 Share</button>
+      <button id="btn-close-history" class="btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: WATER MANUAL ===== -->
+<div id="modal-water-manual" class="modal hidden">
+  <div class="modal-content" style="max-width:520px;">
+    <h2 style="margin-bottom:10px;">Register Water Usage</h2>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label for="water-manual-input" style="font-size:14px; opacity:0.8;">Gallons</label>
+      <input
+        type="number"
+        id="water-manual-input"
+        placeholder="Ej. 150"
+        min="0"
+        step="1"
+        style="width:160px;"
+      />
+    </div>
+
+    <div style="margin-top:8px; font-size:12px; opacity:0.7;">
+      This value will update the water consumption for the selected machine.
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button type="button" id="save-water-manual" class="btn">Save</button>
+      <button type="button" id="cancel-water-manual" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: MAX WATER CAPACITY ===== -->
+<div id="modal-water-max" class="modal hidden">
+  <div class="modal-content" style="max-width:520px;">
+    <h2 style="margin-bottom:10px;">Configure Max Water Capacity</h2>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <label for="max-water-input" style="font-size:14px; opacity:0.8;">Max Gallons</label>
+      <input
+        type="number"
+        id="max-water-input"
+        placeholder="Ej. 2000"
+        min="1"
+        step="1"
+        style="width:160px;"
+      />
+    </div>
+
+    <div style="margin-top:8px; font-size:12px; opacity:0.7;">
+      This defines total water capacity before reaching 0% remaining.
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button type="button" id="btn-save-max-water" class="btn">Save</button>
+      <button type="button" id="btn-cancel-max-water" class="btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: WATER HISTORY ===== -->
+<div id="modal-water-history" class="modal hidden">
+  <div class="modal-content" style="max-width:700px;">
+    <h2>Water History</h2>
+
+    <div id="water-history-container" style="margin-top:10px;"></div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button id="btn-close-water-history" class="btn">Close</button>
+    </div>
+  </div>
+</div>
+
+  <script>
+    // Logout
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
+
+  <!-- ===== MODAL: NUEVA MÁQUINA (PROFESIONAL) ===== -->
+  <div id="modal-machine" class="modal hidden">
+    <div class="modal-content">
+      <h2>New Machine</h2>
+
+      <form id="form-machine">
+        <input type="text" id="new-machine-id" placeholder="Machine ID (ej. ICE_01)" required />
+        <input type="text" id="new-machine-area" placeholder="Area (e.g. BAR)" required />
+        <input type="text" id="new-machine-location" placeholder="Exact Location" required />
+        <input type="text" id="new-machine-serial" placeholder="Serial Number" />
+
+
+        <input type="text" id="new-machine-building" placeholder="Building (ej. Torre A)" />
+        <input type="text" id="new-machine-floor" placeholder="Floor (ej. Piso 3)" />
+        <input type="text" id="new-machine-zone" placeholder="Zone (ej. Barra Norte)" />
+
+        <div class="modal-grid-2">
+
+          <div class="modal-group">
+            <label for="new-machine-brand">Marca</label>
+            <div class="input-with-btn">
+              <select id="new-machine-brand" required>
+                <option value="">Select brand</option>
+              </select>
+              <button type="button" id="btn-add-brand" class="btn-icon">+</button>
+            </div>
+            <div id="add-brand-form" class="mini-panel" style="display:none;">
+              <input type="text" id="new-brand-name" placeholder="New brand name" />
+              <input type="text" id="new-brand-category" placeholder="Category (ICE_MACHINE, etc)" />
+              <button type="button" id="btn-save-brand" class="btn" style="margin-top:6px;">Save Brand</button>
+            </div>
+          </div>
+
+          <div class="modal-group">
+            <label for="new-machine-model">Modelo</label>
+            <div class="input-with-btn">
+              <select id="new-machine-model" required disabled>
+                <option value="">Select model</option>
+              </select>
+              <button type="button" id="btn-add-model" class="btn-icon">+</button>
+            </div>
+            <div id="add-model-form" class="mini-panel" style="display:none;">
+              <input type="text" id="new-model-name" placeholder="New model name" />
+              <button type="button" id="btn-save-model" class="btn" style="margin-top:6px;">Save Model</button>
+            </div>
+          </div>
+
+          <!-- CONFIGURAR FILTROS RECOMENDADOS DEL MODELO -->
+          <div id="model-config-section" style="display:none; margin-top:10px;">
+
+            <button type="button" id="btn-config-model" class="btn-secondary">
+              ⚙ Configure recommended filters
+            </button>
+
+            <div id="model-filters-panel" class="mini-panel" style="display:none;">
+
+              <h4 style="margin-bottom:8px;">Add recommended filter</h4>
+
+              <input type="text" id="config-filter-name" placeholder="Filter name" />
+
+              <input type="number" id="config-life-months" placeholder="Useful life (months)" min="1" />
+
+              <hr style="margin:12px 0; opacity:0.2;">
+
+              <label style="font-size:12px; font-weight:600; opacity:0.7;">Technical Specifications</label>
+
+              <input type="number" id="config-water-capacity" placeholder="Water capacity (gallons)" min="0" />
+
+              <input type="number" step="0.01" id="config-micron-rating" placeholder="Micron rating (µm)" min="0" />
+
+              <input type="number" id="config-chlorine-capacity" placeholder="Chlorine capacity (gallons)" min="0" />
+
+              <input type="number" step="0.01" id="config-max-flow" placeholder="Max flow rate (GPM)" min="0" />
+
+              <div style="display:flex; gap:8px;">
+                <input type="number" id="config-psi-min" placeholder="Min PSI" min="0" />
+                <input type="number" id="config-psi-max" placeholder="Max PSI" min="0" />
+              </div>
+
+              <input type="text" id="config-filter-notes" placeholder="Notes (optional)" />
+
+              <button type="button" id="btn-save-config-filter" class="btn" style="margin-top:8px;">
+                Save recommended filter
+              </button>
+
+              <div id="existing-model-filters" style="margin-top:12px;"></div>
+
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="modal-actions">
+          <button type="submit" class="btn">Save</button>
+          <button type="button" id="btn-cancel-machine" class="btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    const toggleBtn = document.getElementById('toggle-machine-form');
+    const collapsibleSection = document.getElementById('machine-form-collapsible');
+
+    if (toggleBtn && collapsibleSection) {
+      toggleBtn.addEventListener('click', () => {
+        const isHidden = collapsibleSection.style.display === 'none';
+        collapsibleSection.style.display = isHidden ? 'block' : 'none';
+        toggleBtn.textContent = isHidden ? '−' : '+';
+      });
+    }
+  </script>
+  <script>
+    // Set organization name dynamically from login
+    const companyData = JSON.parse(localStorage.getItem('company'));
+
+    if (companyData && companyData.company_name) {
+      const orgInput = document.getElementById('org-display');
+      if (orgInput) {
+        orgInput.value = companyData.company_name;
+      }
+    }
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

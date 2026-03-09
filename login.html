@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FilterTrack | Login</title>
+  <title>FiltraCore | Login</title>
   <link rel="stylesheet" href="style_login.css" />
 </head>
 <body class="login-page">
@@ -11,24 +11,51 @@
  
 
   <div class="login-container">
-      <h1>FilterTrack</h1>
-      <p style="opacity:0.7; font-size:14px; margin-bottom:20px;">Sistema de Gestión de Filtros</p>
+      <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
+        <select id="lang-select" style="padding:6px 10px; border-radius:8px; font-size:13px;">
+          <option value="es">🇪🇸 Español</option>
+          <option value="en">🇺🇸 English</option>
+        </select>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:20px;">
+        <img src="imgs/logo.png" alt="FiltraCore Logo" style="width:130px; height:130px; object-fit:cover; border-radius:20px; margin-bottom:15px;" />
+        <h1 style="margin:0;">FiltraCore</h1>
+        <p style="opacity:0.7; font-size:14px; margin-top:8px;">Intelligent Filtration Management — by Bastida Systems</p>
+      </div>
 
       <form id="login-form" class="login-form">
         <div class="input-group">
-          <input id="user" type="text" placeholder="Usuario" required />
+          <input id="user" type="text" placeholder="Usuario" data-i18n-placeholder="username" required />
         </div>
 
         <div class="input-group">
-          <input id="pass" type="password" placeholder="Contraseña" required />
+          <input id="pass" type="password" placeholder="Contraseña" data-i18n-placeholder="password" required />
         </div>
 
-        <button type="submit">Entrar</button>
+        <button type="submit" data-i18n="loginBtn">Entrar</button>
+        <button type="button" id="go-register" data-i18n="registerCompany" style="margin-top:10px; background:#222;">Registrar Empresa</button>
+        <div style="margin-top:15px; text-align:center; font-size:13px; opacity:0.8;">
+          <a href="mailto:bastidasystems@gmail.com" data-i18n="helpText" style="color:#4da6ff; text-decoration:none;">
+            Need help? Contact support
+          </a>
+        </div>
       </form>
   </div>
 
   <script>
-    const API = 'https://filtertrack-backend.onrender.com';
+    const API = 'http://localhost:3000';
+
+    // Load saved language or default
+    const savedLang = localStorage.getItem('lang') || 'es';
+    localStorage.setItem('lang', savedLang);
+
+    const langSelect = document.getElementById('lang-select');
+    if (langSelect) {
+      langSelect.value = savedLang;
+      langSelect.addEventListener('change', (e) => {
+        localStorage.setItem('lang', e.target.value);
+      });
+    }
 
     document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault();
@@ -36,7 +63,10 @@
       try {
         const res = await fetch(`${API}/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': localStorage.getItem('lang') || 'es'
+          },
           body: JSON.stringify({
             user_id: document.getElementById('user').value,
             password: document.getElementById('pass').value,
@@ -48,6 +78,12 @@
 
         if (data.token) {
           localStorage.setItem('token', data.token);
+
+          // 🔥 Guardar información de la empresa
+          if (data.company) {
+            localStorage.setItem('company', JSON.stringify(data.company));
+          }
+
           window.location.href = 'index.html';
         } else {
           alert(data.error || 'Credenciales inválidas');
@@ -58,6 +94,60 @@
         console.error(err);
       }
     });
+
+    // Ir a registro
+    const registerBtn = document.getElementById('go-register');
+    if (registerBtn) {
+      registerBtn.addEventListener('click', () => {
+        window.location.href = 'register.html';
+      });
+    }
+
+
+// 🌍 Translation system
+const translations = {
+  es: {
+    username: "Usuario",
+    password: "Contraseña",
+    loginBtn: "Entrar",
+    registerCompany: "Registrar Empresa",
+    helpText: "¿Necesitas ayuda? Contactar soporte"
+  },
+  en: {
+    username: "Username",
+    password: "Password",
+    loginBtn: "Login",
+    registerCompany: "Register Company",
+    helpText: "Need help? Contact support"
+  }
+};
+
+function applyLoginTranslations() {
+  const lang = localStorage.getItem('lang') || 'es';
+  const langData = translations[lang];
+
+  // Button text
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (langData[key]) el.textContent = langData[key];
+  });
+
+  // Placeholder text
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (langData[key]) el.placeholder = langData[key];
+  });
+}
+
+// Apply on load
+applyLoginTranslations();
+
+// Re-apply when language changes
+if (langSelect) {
+  langSelect.addEventListener('change', () => {
+    setTimeout(() => applyLoginTranslations(), 50);
+  });
+}
   </script>
 
 </body>
