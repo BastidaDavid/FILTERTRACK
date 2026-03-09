@@ -2012,6 +2012,11 @@ const PORT = Number(process.env.PORT || 3000);
         ADD COLUMN IF NOT EXISTS water_used_gallons INTEGER DEFAULT 0
       `);
       console.log("✅ DB schema check: water_used_gallons column verified");
+      await db.query(`
+        ALTER TABLE model_filters
+        ADD COLUMN IF NOT EXISTS water_capacity_gallons INTEGER
+      `);
+      console.log("✅ DB schema check: model_filters.water_capacity_gallons verified");
     } catch (schemaErr) {
       console.error("⚠️ Schema verification warning:", schemaErr.message);
     }
