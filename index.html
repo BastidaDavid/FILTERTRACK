@@ -690,12 +690,12 @@
   </script>
   <script>
     // Set organization name dynamically from login
-    const companyData = JSON.parse(localStorage.getItem('company'));
+    const orgName = localStorage.getItem('org_name');
 
-    if (companyData && companyData.company_name) {
+    if (orgName) {
       const orgInput = document.getElementById('org-display');
       if (orgInput) {
-        orgInput.value = companyData.company_name;
+        orgInput.value = orgName;
       }
     }
   </script>

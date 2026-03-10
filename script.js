@@ -2020,6 +2020,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -----------------------------
+  // SHOW ORGANIZATION NAME
+  // -----------------------------
+  const orgName = localStorage.getItem("org_name");
+  const orgElement = document.getElementById("organizationName");
+
+  if (orgElement && orgName) {
+    orgElement.textContent = orgName;
+  }
+
+  // -----------------------------
   // LOGOUT
   // -----------------------------
   const btnLogout = document.getElementById('btn-logout')
