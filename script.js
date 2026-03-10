@@ -801,24 +801,28 @@ document.addEventListener('DOMContentLoaded', () => {
           .forEach(m => {
             const item = document.createElement('div')
             item.className = 'machine-item'
-            item.dataset.machineId = m.machine_id
 
-            if (maquinaSeleccionadaId === m.machine_id) {
+            // Some APIs return "id" instead of "machine_id"
+            const machineKey = m.machine_id || m.id
+
+            item.dataset.machineId = machineKey
+
+            if (maquinaSeleccionadaId === machineKey) {
               item.classList.add('activa')
             }
 
             item.innerHTML = `
               <div>
-                <span>${m.machine_id}</span>
+                <span>${machineKey}</span>
                 <span>${m.area || ''}</span>
               </div>
             `
 
             item.addEventListener('click', () => {
-              if (m.machine_id === 'GENERAL') {
+              if (machineKey === 'GENERAL') {
                 maquinaSeleccionadaId = null;
               } else {
-                maquinaSeleccionadaId = m.machine_id;
+                maquinaSeleccionadaId = machineKey;
               }
 
               const formFiltro = document.getElementById('form-filtro');
@@ -852,30 +856,30 @@ document.addEventListener('DOMContentLoaded', () => {
               const btnArchivar = document.getElementById('btn-archivar-maquina')
 
               if (btnEditar) {
-                if (m.machine_id === 'GENERAL') {
+                if (machineKey === 'GENERAL') {
                   btnEditar.disabled = true;
                 } else {
                   btnEditar.disabled = false;
-                  btnEditar.onclick = () => editarMaquina(m.machine_id);
+                  btnEditar.onclick = () => editarMaquina(machineKey);
                 }
               }
 
               if (btnArchivar) {
-                if (m.machine_id === 'GENERAL') {
+                if (machineKey === 'GENERAL') {
                   btnArchivar.disabled = true;
                 } else {
                   btnArchivar.disabled = false;
-                  btnArchivar.onclick = () => eliminarMaquina(m.machine_id);
+                  btnArchivar.onclick = () => eliminarMaquina(machineKey);
                 }
               }
 
               const titulo = document.getElementById('titulo-maquina')
               if (titulo) {
-                titulo.textContent = `Máquina seleccionada: ${m.machine_id}`
+                titulo.textContent = `Máquina seleccionada: ${machineKey}`
               }
 
               cargarFiltros()
-              cargarDatosMaquina(m.machine_id)
+              cargarDatosMaquina(machineKey)
             })
 
             lista.appendChild(item)
