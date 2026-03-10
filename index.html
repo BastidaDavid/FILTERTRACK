@@ -691,34 +691,38 @@
   <script>
     // Set organization name dynamically from login
     document.addEventListener('DOMContentLoaded', () => {
-      let orgName = localStorage.getItem('org_name');
+      let orgName = null;
 
-      // If org_name is stored as JSON string
+      // Try common keys first
+      orgName = localStorage.getItem('org_name') ||
+                localStorage.getItem('organization') ||
+                localStorage.getItem('company_name');
+
+      // If org_name stored as JSON
       if (orgName && orgName.startsWith('{')) {
         try {
           const parsed = JSON.parse(orgName);
-          orgName = parsed.name || parsed.organization || parsed.org_name || '';
+          orgName = parsed.name || parsed.organization || parsed.org_name || parsed.company_name || null;
         } catch (e) {
           console.warn('org_name JSON parse failed');
         }
       }
 
-      // If it was stored incorrectly as [object Object]
+      // If it was stored as [object Object]
       if (orgName === '[object Object]') {
         orgName = null;
       }
 
-      // Try fallback from company object
+      // Fallback from company object
       if (!orgName) {
         try {
           const companyRaw = localStorage.getItem('company');
           if (companyRaw) {
             const company = JSON.parse(companyRaw);
-            orgName = company.name || company.organization || company.org_name || '';
+            orgName = company.name || company.organization || company.org_name || company.company_name || null;
           }
         } catch (e) {
           console.warn('Could not parse company from localStorage');
-          
         }
       }
 
