@@ -801,6 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .forEach(m => {
             const item = document.createElement('div')
             item.className = 'machine-item'
+            item.dataset.machineId = m.machine_id
 
             if (maquinaSeleccionadaId === m.machine_id) {
               item.classList.add('activa')
