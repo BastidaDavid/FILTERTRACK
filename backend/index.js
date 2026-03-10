@@ -1178,7 +1178,7 @@ app.get('/machines/:machine_id', authMiddleware, async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT m.id AS machine_id,
+      `SELECT m.machine_id,
               m.area,
               m.location,
               m.serial_number,
