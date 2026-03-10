@@ -802,8 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div')
             item.className = 'machine-item'
 
-            // Some APIs return "id" instead of "machine_id"
-            const machineKey = m.machine_id || m.id
+            // Only use machine_id
+            const machineKey = m.machine_id
 
             item.dataset.machineId = machineKey
 
@@ -1558,7 +1558,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalMachine.classList.add('hidden')
         formMachine.reset()
+
+        // Auto-select the newly created machine
+        maquinaSeleccionadaId = machineId
+
         await cargarMaquinas()
+        await cargarDatosMaquina(machineId)
+        await cargarFiltros()
 
       } catch (err) {
         console.error('Error en creación de máquina:', err)
