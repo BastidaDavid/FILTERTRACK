@@ -150,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
       btnClear.textContent = langData.clearFieldsBtn;
     }
 
-    updateLangButton();
   }
 
   function toggleLanguage() {
