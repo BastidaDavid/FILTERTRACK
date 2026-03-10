@@ -693,27 +693,42 @@
     document.addEventListener('DOMContentLoaded', () => {
       let orgName = localStorage.getItem('org_name');
 
-      // If org_name was accidentally saved as an object string
-      if (orgName === "[object Object]") {
+      // If org_name is stored as JSON string
+      if (orgName && orgName.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(orgName);
+          orgName = parsed.name || parsed.organization || parsed.org_name || '';
+        } catch (e) {
+          console.warn('org_name JSON parse failed');
+        }
+      }
+
+      // If it was stored incorrectly as [object Object]
+      if (orgName === '[object Object]') {
         orgName = null;
       }
 
-      // Fallback: read from company object if org_name missing
+      // Try fallback from company object
       if (!orgName) {
         try {
           const companyRaw = localStorage.getItem('company');
           if (companyRaw) {
             const company = JSON.parse(companyRaw);
-            orgName = company.name || company.organization || company.org_name || "Bastida Systems";
+            orgName = company.name || company.organization || company.org_name || '';
           }
         } catch (e) {
           console.warn('Could not parse company from localStorage');
-          orgName = "Bastida Systems";
+          
         }
       }
 
+      // Final fallback
+      if (!orgName) {
+        orgName = 'Bastida Systems';
+      }
+
       const orgInput = document.getElementById('org-display');
-      if (orgInput && orgName) {
+      if (orgInput) {
         orgInput.value = orgName;
       }
     });
