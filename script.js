@@ -1227,6 +1227,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (floor) floor.value = machine.floor || '';
       if (zone) zone.value = machine.zone || '';
 
+      // Auto-open machine form panel when machine is selected
+      const formPanel = document.getElementById('machine-form-collapsible');
+      if (formPanel) {
+        formPanel.style.display = 'block';
+      }
+
       // Load brand + model if exist
       if (machine.brand_id) {
         const selectMarca = document.getElementById('brand');
