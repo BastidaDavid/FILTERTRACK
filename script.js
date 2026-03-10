@@ -696,32 +696,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </td>
         `
-        // Make filter row clickable → jump to its machine
-        tr.style.cursor = 'pointer';
-
-        tr.addEventListener('click', (e) => {
-
-          // Ignore clicks on action buttons (edit / history / manage)
-          if (e.target.closest('.btn-accion')) return;
-
-          if (!f.machine_id) return;
-
-          // Select machine
-          maquinaSeleccionadaId = f.machine_id;
-
-          // Highlight machine in sidebar
-          document.querySelectorAll('.machine-item').forEach(el => {
-            el.classList.remove('activa');
-
-            if (el.textContent.includes(f.machine_id)) {
-              el.classList.add('activa');
-            }
-          });
-
-          // Load machine data + its filters
-          cargarDatosMaquina(f.machine_id);
-          cargarFiltros();
-        });
         tbody.appendChild(tr)
       })
     } catch (err) {
@@ -2041,6 +2015,17 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
 
+
+  // -----------------------------
+  // INIT SYSTEM
+  // -----------------------------
+
+  applyTranslations();
+  cargarMarcas();
+  cargarMaquinas();
+  cargarFiltros();
+
+  console.log("SYSTEM INITIALIZED");
 
   // -----------------------------
   // ADD BRAND (From Nueva Máquina Modal)
