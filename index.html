@@ -690,14 +690,24 @@
   </script>
   <script>
     // Set organization name dynamically from login
-    const orgName = localStorage.getItem('org_name');
+    document.addEventListener('DOMContentLoaded', () => {
+      let orgName = localStorage.getItem('org_name');
 
-    if (orgName) {
+      // Fallback: read from company object if org_name missing
+      if (!orgName) {
+        try {
+          const company = JSON.parse(localStorage.getItem('company') || '{}');
+          orgName = company.name || company.organization || company.org_name || '';
+        } catch (e) {
+          console.warn('Could not parse company from localStorage');
+        }
+      }
+
       const orgInput = document.getElementById('org-display');
-      if (orgInput) {
+      if (orgInput && orgName) {
         orgInput.value = orgName;
       }
-    }
+    });
   </script>
   <script src="script.js"></script>
 </body>
