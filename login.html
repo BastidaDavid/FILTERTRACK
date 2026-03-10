@@ -81,16 +81,27 @@
         if (data.token) {
           localStorage.setItem('token', data.token);
 
-          // 🔥 Guardar información de la empresa
+          // 🔥 Guardar información de la empresa / organización
+          let orgName = null;
+
+          // If backend sends company object
           if (data.company) {
             localStorage.setItem('company', JSON.stringify(data.company));
-
-            // Save organization name separately for dashboard display
-            const orgName = data.company.name || data.company.organization || data.company.org_name || "";
-            if (orgName) {
-              localStorage.setItem('org_name', orgName);
-            }
+            orgName = data.company.name || data.company.organization || data.company.org_name || null;
           }
+
+          // If backend sends organization directly
+          if (!orgName && data.organization) {
+            orgName = data.organization;
+          }
+
+          // Fallback: use org_id sent in login
+          if (!orgName) {
+            orgName = "Bastida Systems";
+          }
+
+          // Save for dashboard
+          localStorage.setItem('org_name', orgName);
 
           window.location.href = 'index.html';
         } else {
