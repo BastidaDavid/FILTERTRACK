@@ -693,13 +693,22 @@
     document.addEventListener('DOMContentLoaded', () => {
       let orgName = localStorage.getItem('org_name');
 
+      // If org_name was accidentally saved as an object string
+      if (orgName === "[object Object]") {
+        orgName = null;
+      }
+
       // Fallback: read from company object if org_name missing
       if (!orgName) {
         try {
-          const company = JSON.parse(localStorage.getItem('company') || '{}');
-          orgName = company.name || company.organization || company.org_name || '';
+          const companyRaw = localStorage.getItem('company');
+          if (companyRaw) {
+            const company = JSON.parse(companyRaw);
+            orgName = company.name || company.organization || company.org_name || "Bastida Systems";
+          }
         } catch (e) {
           console.warn('Could not parse company from localStorage');
+          orgName = "Bastida Systems";
         }
       }
 
