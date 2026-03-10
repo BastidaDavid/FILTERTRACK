@@ -659,6 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         tr.innerHTML = `
           <td>${f.filter_id}</td>
+          <td>${f.machine_id || '-'}</td>
           <td>${f.area || '-'}</td>
           <td>${f.serial_number || '-'}</td>
           <td>${f.location || '-'}</td>
@@ -1209,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Autocomplete base info
-
+      const machineIdInput = document.getElementById('machine-id');
       const area = document.getElementById('area');
       const location = document.getElementById('location');
       const serial = document.getElementById('serial-number');
@@ -1217,6 +1218,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const floor = document.getElementById('machine-floor');
       const zone = document.getElementById('machine-zone');
 
+      if (machineIdInput) machineIdInput.value = machine.machine_id || '';
       
       if (area) area.value = machine.area || '';
       if (location) location.value = machine.location || '';
