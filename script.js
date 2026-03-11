@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (vistaFiltroActiva === 'soon') {
         filtrosRender = filtrosRender.filter(f => {
           const estado = calcularEstado(f.due_date);
-          return estado.clase === 'estado-naranja';
+          return estado.clase === 'estado-amarillo' || estado.clase === 'estado-naranja';
         });
       }
 
