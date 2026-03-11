@@ -1790,7 +1790,7 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         });
 
-        if (!updateRes || !updateRes.ok) {
+        if (!updateRes || updateRes.status >= 400) {
           alert('Error updating filter');
           return;
         }
