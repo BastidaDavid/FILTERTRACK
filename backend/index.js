@@ -364,12 +364,16 @@ async function createFilter(body, res) {
       ]
     );
 
-    await db.query(
-      `INSERT INTO events
-       (org_id, filter_id, event_type, event_date, reason, responsible, notes, created_at)
-       VALUES ($1,$2,'INSTALL',$3,NULL,$4,$5,$6)`,
-      [org_id, filter_id, install_date, responsible, notes || null, ts]
-    );
+    try {
+      await db.query(
+        `INSERT INTO events
+         (org_id, filter_id, event_type, event_date, reason, responsible, notes, created_at)
+         VALUES ($1,$2,'INSTALL',$3,NULL,$4,$5,$6)`,
+        [org_id, filter_id, install_date, responsible, notes || null, ts]
+      );
+    } catch (eventErr) {
+      console.warn('⚠️ Event insert failed but filter was created:', eventErr.message);
+    }
 
     return res.json({ message: 'Filter created', filter_id, due_date, status });
 
