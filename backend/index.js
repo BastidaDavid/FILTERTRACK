@@ -269,7 +269,7 @@ async function createFilter(body, res) {
 
   // Validate machine exists
   const machineCheck = await db.query(
-    `SELECT machine_id FROM machines WHERE machine_id = $1 AND org_id = $2`,
+    `SELECT machine_id, area FROM machines WHERE machine_id = $1 AND org_id = $2`,
     [body.machine_id, org_id]
   );
 
@@ -335,20 +335,21 @@ async function createFilter(body, res) {
   try {
     await db.query(
       `INSERT INTO filters (
-        org_id, filter_id, machine_id,
+        org_id, filter_id, machine_id, area,
         model_filter_id,
         install_date, life_months, due_date, status, responsible, notes,
         record_state, created_at, updated_at
       ) VALUES (
-        $1,$2,$3,
-        $4,
-        $5,$6,$7,$8,$9,$10,
-        'ACTIVE',$11,$12
+        $1,$2,$3,$4,
+        $5,
+        $6,$7,$8,$9,$10,$11,
+        'ACTIVE',$12,$13
       )`,
       [
         org_id,
         filter_id,
         machine_id,
+        machineCheck.rows[0].area,
         model_filter_id || null,
         install_date,
         Number(life_months),
