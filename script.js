@@ -803,7 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'machine-item'
 
             // Only use machine_id
-            const machineKey = m.machine_id
+            const machineKey = String(m.machine_id)
+            console.log('Machine loaded:', m);
 
             item.dataset.machineId = machineKey
 
