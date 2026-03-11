@@ -643,11 +643,15 @@ app.put('/filters/:filter_id', authMiddleware, async (req, res) => {
       ]
     );
 
-    await db.query(
-      `INSERT INTO events (org_id, filter_id, event_type, event_date, reason, responsible, notes, created_at)
-       VALUES ($1,$2,'EDIT',$3,NULL,$4,$5,$6)`,
-      [req.user.org_id, filter_id, isoToday(), updated.responsible, 'Edited filter record', ts]
-    );
+    try {
+      await db.query(
+        `INSERT INTO events (org_id, filter_id, event_type, event_date, reason, responsible, notes, created_at)
+         VALUES ($1,$2,'EDIT',$3,NULL,$4,$5,$6)`,
+        [req.user.org_id, filter_id, isoToday(), updated.responsible, 'Edited filter record', ts]
+      );
+    } catch (eventErr) {
+      console.warn('⚠️ Event insert failed but filter update succeeded:', eventErr.message);
+    }
 
     res.json({ message: 'Filter updated', filter_id, due_date, status });
 
