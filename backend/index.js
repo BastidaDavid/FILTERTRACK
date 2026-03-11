@@ -604,9 +604,9 @@ app.put('/filters/:filter_id', authMiddleware, async (req, res) => {
       if (req.body[k] !== undefined) updated[k] = req.body[k];
     }
 
-    const install_date = updated.install_date;
-    const life_months = Number(updated.life_months) || 0;
-    const life_days = Number(req.body.life_days) || 0;
+    const install_date = updated.install_date || isoToday();
+    const life_months = Number(updated.life_months || 1);
+    const life_days = Number(req.body.life_days || 0);
 
     const base = new Date(install_date);
 
