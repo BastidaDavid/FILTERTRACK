@@ -1094,7 +1094,7 @@ app.get('/machines', authMiddleware, async (req, res) => {
     const includeArchived = req.query.includeArchived === 'true';
 
     const sql = includeArchived
-      ? `SELECT m.id AS machine_id,
+      ? `SELECT m.machine_id,
                 m.area,
                 m.location,
                 m.serial_number,
@@ -1115,7 +1115,7 @@ app.get('/machines', authMiddleware, async (req, res) => {
             END,
             b.category ASC,
             m.created_at DESC`
-      : `SELECT m.id AS machine_id,
+      : `SELECT m.machine_id,
                 m.area,
                 m.location,
                 m.serial_number,
