@@ -335,19 +335,20 @@ async function createFilter(body, res) {
   try {
     await db.query(
       `INSERT INTO filters (
-        org_id, filter_id, machine_id, area,
+        org_id, filter_id, machine_id, equipment, area,
         model_filter_id,
         install_date, life_months, due_date, status, responsible, notes,
         record_state, created_at, updated_at
       ) VALUES (
-        $1,$2,$3,$4,
-        $5,
-        $6,$7,$8,$9,$10,$11,
-        'ACTIVE',$12,$13
+        $1,$2,$3,$4,$5,
+        $6,
+        $7,$8,$9,$10,$11,$12,
+        'ACTIVE',$13,$14
       )`,
       [
         org_id,
         filter_id,
+        machine_id,
         machine_id,
         machineCheck.rows[0].area,
         model_filter_id || null,
